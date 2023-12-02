@@ -22,31 +22,34 @@ const DIGITS_AND_DIGIT_WORDS: &[&str] = &[
     "five", "six", "seven", "eight", "nine",
 ];
 
-#[derive(Debug)]
-enum Dir {
-    Left,
-    Right,
-}
-
-fn find_digit(s: &str, digits: &[&str], dir: Dir) -> Result<usize, Oops> {
+fn find_left(s: &str, digits: &[&str]) -> usize {
     let mut haystack = s;
     let mut matched_digit = None;
     for (digit, needle) in digits.iter().enumerate() {
-        match match dir {
-            Dir::Left => haystack.find(needle),
-            Dir::Right => haystack.rfind(needle),
-        } {
+        match haystack.find(needle) {
             Some(idx) => {
                 matched_digit = Some(digit % 10);
-                haystack = match dir {
-                    Dir::Left => &haystack[..idx + needle.len()],
-                    Dir::Right => &haystack[idx..],
-                }
+                haystack = &haystack[..idx + needle.len()];
             }
             None => continue,
         }
     }
-    matched_digit.ok_or_else(|| oops!("not found!"))
+    matched_digit.unwrap_or(0)
+}
+
+fn find_right(s: &str, digits: &[&str]) -> usize {
+    let mut haystack = s;
+    let mut matched_digit = None;
+    for (digit, needle) in digits.iter().enumerate() {
+        match haystack.rfind(needle) {
+            Some(idx) => {
+                matched_digit = Some(digit % 10);
+                haystack = &haystack[idx..];
+            }
+            None => continue,
+        }
+    }
+    matched_digit.unwrap_or(0)
 }
 
 #[derive(Debug)]
@@ -60,10 +63,9 @@ impl FromStr for Value {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Value {
-            calibration1: find_digit(s, DIGITS, Dir::Left)? * 10
-                + find_digit(s, DIGITS, Dir::Right)?,
-            calibration2: find_digit(s, DIGITS_AND_DIGIT_WORDS, Dir::Left)? * 10
-                + find_digit(s, DIGITS_AND_DIGIT_WORDS, Dir::Right)?,
+            calibration1: find_left(s, DIGITS) * 10 + find_right(s, DIGITS),
+            calibration2: find_left(s, DIGITS_AND_DIGIT_WORDS) * 10
+                + find_right(s, DIGITS_AND_DIGIT_WORDS),
         })
     }
 }
