@@ -28,37 +28,32 @@ impl FromStr for Game {
     type Err = Oops;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (game, seen_sets) = s.split_once(": ").ok_or_else(|| oops!("malformed input"))?;
+        let (game, seen_sets) = s.split_once(": ").ok_or_else(|| oops!("malformed line"))?;
         let game = game
             .strip_prefix("Game ")
             .ok_or_else(|| oops!("malformed game ID"))?;
         let id = game.parse::<usize>()?;
-        let (red, green, blue) = seen_sets
-            .split("; ")
-            .fold((0, 0, 0), |(r, g, b), seen_set| {
-                let (mut r2, mut g2, mut b2) = (0, 0, 0);
+        seen_sets.split("; ").try_fold(
+            Game {
+                id,
+                red: 0,
+                green: 0,
+                blue: 0,
+            },
+            |mut game, seen_set| {
                 for marbles in seen_set.split(", ") {
                     let (count, color) = marbles.split_once(' ').unwrap();
-                    let count = count.parse::<usize>().unwrap();
+                    let count = count.parse::<usize>()?;
                     match color {
-                        "red" => r2 = count,
-                        "green" => g2 = count,
-                        "blue" => b2 = count,
-                        _ => (),
+                        "red" => game.red = std::cmp::max(game.red, count),
+                        "green" => game.green = std::cmp::max(game.green, count),
+                        "blue" => game.blue = std::cmp::max(game.blue, count),
+                        _ => return Err(oops!("unknown colour")),
                     }
                 }
-                (
-                    std::cmp::max(r, r2),
-                    std::cmp::max(g, g2),
-                    std::cmp::max(b, b2),
-                )
-            });
-        Ok(Game {
-            id,
-            red,
-            green,
-            blue,
-        })
+                Ok(game)
+            },
+        )
     }
 }
 
