@@ -60,6 +60,21 @@ impl Point2 {
             iter: NEIGHBOR_VECTORS.iter(),
         }
     }
+
+    #[must_use]
+    pub fn diagonal_neighbors(&self) -> Neighbors2 {
+        const NEIGHBOR_VECTORS: &[Vector2] = &[
+            Vector2::new(-1, -1),
+            Vector2::new(-1, 1),
+            Vector2::new(1, -1),
+            Vector2::new(1, 1),
+        ];
+
+        Neighbors2 {
+            p: self,
+            iter: NEIGHBOR_VECTORS.iter(),
+        }
+    }
 }
 
 pub struct Neighbors2<'a> {
@@ -179,6 +194,31 @@ impl Point3 {
     }
 
     #[must_use]
+    pub fn all_neighbors(&self) -> Neighbors3 {
+        const NEIGHBOR_VECTORS: &[Vector3] = &[
+            Vector3::new(-1, 0, 0),
+            Vector3::new(1, 0, 0),
+            Vector3::new(0, -1, 0),
+            Vector3::new(0, 1, 0),
+            Vector3::new(0, 0, -1),
+            Vector3::new(0, 0, 1),
+            Vector3::new(-1, -1, -1),
+            Vector3::new(-1, -1, 1),
+            Vector3::new(-1, 1, -1),
+            Vector3::new(-1, 1, 1),
+            Vector3::new(1, -1, -1),
+            Vector3::new(1, -1, 1),
+            Vector3::new(1, 1, -1),
+            Vector3::new(1, 1, 1),
+        ];
+
+        Neighbors3 {
+            p: self,
+            iter: NEIGHBOR_VECTORS.iter(),
+        }
+    }
+
+    #[must_use]
     pub fn cardinal_neighbors(&self) -> Neighbors3 {
         const NEIGHBOR_VECTORS: &[Vector3] = &[
             Vector3::new(-1, 0, 0),
@@ -187,6 +227,25 @@ impl Point3 {
             Vector3::new(0, 1, 0),
             Vector3::new(0, 0, -1),
             Vector3::new(0, 0, 1),
+        ];
+
+        Neighbors3 {
+            p: self,
+            iter: NEIGHBOR_VECTORS.iter(),
+        }
+    }
+
+    #[must_use]
+    pub fn diagonal_neighbors(&self) -> Neighbors3 {
+        const NEIGHBOR_VECTORS: &[Vector3] = &[
+            Vector3::new(-1, -1, -1),
+            Vector3::new(-1, -1, 1),
+            Vector3::new(-1, 1, -1),
+            Vector3::new(-1, 1, 1),
+            Vector3::new(1, -1, -1),
+            Vector3::new(1, -1, 1),
+            Vector3::new(1, 1, -1),
+            Vector3::new(1, 1, 1),
         ];
 
         Neighbors3 {
