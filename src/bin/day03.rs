@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-use aoc_2023::geometry::{Bounds2, Point2};
+use aoc_2023::geometry::Point2;
 use aoc_2023::{oops, oops::Oops};
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Read};
@@ -40,8 +40,8 @@ impl FromStr for Puzzle {
         let mut value_id: usize = 0;
         for (y, line) in s.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
-                let x = x as i32;
-                let y = y as i32;
+                let x = x.try_into()?;
+                let y = y.try_into()?;
                 cells.insert(
                     Point2::new(x, y),
                     if c.is_numeric() {
@@ -54,7 +54,7 @@ impl FromStr for Puzzle {
                             *val = *val * 10 + digit;
                             Cell::Number(*previous_value_id)
                         } else {
-                            value_id = value_id + 1;
+                            value_id += 1;
                             values.insert(value_id, digit);
                             Cell::Number(value_id)
                         }
@@ -82,15 +82,9 @@ fn part1(puzzle: &Puzzle) -> usize {
             let Cell::Number(value_id) = c else {
                 return None;
             };
-            if p.adjacents().any(|neighbor| {
-                puzzle.cells.get(&neighbor).is_some_and(|neighbor_cell| {
-                    if let Cell::Symbol(_) = neighbor_cell {
-                        true
-                    } else {
-                        false
-                    }
-                })
-            }) {
+            if p.all_neighbors()
+                .any(|neighbor| matches!(puzzle.cells.get(&neighbor), Some(Cell::Symbol(_))))
+            {
                 Some(value_id)
             } else {
                 None
@@ -107,32 +101,29 @@ fn part2(puzzle: &Puzzle) -> usize {
     puzzle
         .cells
         .iter()
-        .filter_map(|(p, &c)| {
-            let Cell::Symbol(sym) = c else {
-                return None;
-            };
-            if sym != '*' {
-                return None;
+        .filter_map(|(p, &cell)| match cell {
+            Cell::Symbol(sym) if sym == '*' => {
+                let ids = p
+                    .all_neighbors()
+                    .filter_map(|neighbor| {
+                        if let Some(Cell::Number(value_id)) = puzzle.cells.get(&neighbor) {
+                            Some(value_id)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<HashSet<_>>();
+                if ids.len() == 2 {
+                    Some(
+                        ids.into_iter()
+                            .map(|id| puzzle.values.get(id).unwrap())
+                            .product::<usize>(),
+                    )
+                } else {
+                    None
+                }
             }
-            let ids = p
-                .all_neighbors()
-                .filter_map(|neighbor| {
-                    if let Some(Cell::Number(value_id)) = puzzle.cells.get(&neighbor) {
-                        Some(value_id)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<HashSet<_>>();
-            if ids.len() == 2 {
-                Some(
-                    ids.into_iter()
-                        .map(|id| puzzle.values.get(&id).unwrap())
-                        .product::<usize>(),
-                )
-            } else {
-                None
-            }
+            _ => None,
         })
         .sum()
 }
