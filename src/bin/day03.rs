@@ -39,28 +39,24 @@ impl FromStr for Puzzle {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut cells = HashMap::new();
         let mut values = HashMap::new();
-        let mut id: Id = Id(0);
+        let mut next_id: Id = Id(0);
         for (y, line) in s.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
                 let (x, y) = (x.try_into()?, y.try_into()?);
                 if c.is_numeric() {
                     let digit = c as usize - '0' as usize;
-                    cells.insert(
-                        Point2::new(x, y),
-                        if let Some(Cell::Number(previous_value_id)) =
-                            cells.get(&Point2::new(x - 1, y))
-                        {
-                            // If the previous cell is a number, update the shared value and
-                            // associate this cell with the same shared value.
-                            let val = values.get_mut(previous_value_id).unwrap();
-                            *val = *val * 10 + digit;
-                            Cell::Number(*previous_value_id)
-                        } else {
-                            id.0 += 1;
-                            values.insert(id, digit);
-                            Cell::Number(id)
-                        },
-                    );
+                    let id = match cells.get(&Point2::new(x - 1, y)) {
+                        Some(Cell::Number(previous_id)) => *previous_id,
+                        _ => {
+                            next_id.0 += 1;
+                            next_id
+                        }
+                    };
+                    cells.insert(Point2::new(x, y), Cell::Number(id));
+                    values
+                        .entry(id)
+                        .and_modify(|val| *val = *val * 10 + digit)
+                        .or_insert(digit);
                 } else if c != '.' {
                     cells.insert(Point2::new(x, y), Cell::Symbol(c));
                 };
