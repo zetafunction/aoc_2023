@@ -43,7 +43,7 @@ impl FromStr for Puzzle {
         for (y, line) in s.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
                 let (x, y) = (x.try_into()?, y.try_into()?);
-                if c.is_numeric() {
+                if c.is_ascii_digit() {
                     let digit = c as usize - '0' as usize;
                     let id = match cells.get(&Point2::new(x - 1, y)) {
                         Some(Cell::Number(previous_id)) => *previous_id,
