@@ -96,7 +96,7 @@ fn part2(puzzle: &Puzzle) -> usize {
     puzzle
         .cells
         .iter()
-        .filter_map(|(p, &cell)| match cell {
+        .map(|(p, &cell)| match cell {
             Cell::Symbol('*') => {
                 let ids = p
                     .all_neighbors()
@@ -106,15 +106,14 @@ fn part2(puzzle: &Puzzle) -> usize {
                     })
                     .collect::<HashSet<_>>();
                 match ids.len() {
-                    2 => Some(
-                        ids.into_iter()
-                            .map(|id| puzzle.values.get(id).unwrap())
-                            .product::<usize>(),
-                    ),
-                    _ => None,
+                    2 => ids
+                        .into_iter()
+                        .map(|id| puzzle.values.get(id).unwrap())
+                        .product(),
+                    _ => 0,
                 }
             }
-            _ => None,
+            _ => 0,
         })
         .sum()
 }
