@@ -22,10 +22,10 @@ const DIGITS_AND_DIGIT_WORDS: &[&str] = &[
     "five", "six", "seven", "eight", "nine",
 ];
 
-fn find_left(s: &str, digits: &[&str]) -> usize {
+fn find_left(s: &str, digits: &[&str]) -> u64 {
     let mut haystack = s;
     let mut matched_digit = None;
-    for (digit, needle) in digits.iter().enumerate() {
+    for (needle, digit) in digits.iter().zip(0u64..) {
         match haystack.find(needle) {
             Some(idx) => {
                 matched_digit = Some(digit % 10);
@@ -37,10 +37,10 @@ fn find_left(s: &str, digits: &[&str]) -> usize {
     matched_digit.unwrap_or(0)
 }
 
-fn find_right(s: &str, digits: &[&str]) -> usize {
+fn find_right(s: &str, digits: &[&str]) -> u64 {
     let mut haystack = s;
     let mut matched_digit = None;
-    for (digit, needle) in digits.iter().enumerate() {
+    for (needle, digit) in digits.iter().zip(0u64..) {
         match haystack.rfind(needle) {
             Some(idx) => {
                 matched_digit = Some(digit % 10);
@@ -54,8 +54,8 @@ fn find_right(s: &str, digits: &[&str]) -> usize {
 
 #[derive(Debug)]
 struct Value {
-    calibration1: usize,
-    calibration2: usize,
+    calibration1: u64,
+    calibration2: u64,
 }
 
 impl FromStr for Value {
@@ -89,11 +89,11 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn part1(puzzle: &Puzzle) -> usize {
+fn part1(puzzle: &Puzzle) -> u64 {
     puzzle.values.iter().map(|v| v.calibration1).sum()
 }
 
-fn part2(puzzle: &Puzzle) -> usize {
+fn part2(puzzle: &Puzzle) -> u64 {
     puzzle.values.iter().map(|v| v.calibration2).sum()
 }
 

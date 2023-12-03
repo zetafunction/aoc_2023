@@ -18,10 +18,10 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 struct Game {
-    id: usize,
-    red: usize,
-    green: usize,
-    blue: usize,
+    id: u64,
+    red: u64,
+    green: u64,
+    blue: u64,
 }
 
 impl FromStr for Game {
@@ -32,7 +32,7 @@ impl FromStr for Game {
         let game = game
             .strip_prefix("Game ")
             .ok_or_else(|| oops!("malformed game ID"))?;
-        let id = game.parse::<usize>()?;
+        let id = game.parse::<u64>()?;
         seen_sets.split("; ").try_fold(
             Game {
                 id,
@@ -43,7 +43,7 @@ impl FromStr for Game {
             |mut game, seen_set| {
                 for marbles in seen_set.split(", ") {
                     let (count, color) = marbles.split_once(' ').unwrap();
-                    let count = count.parse::<usize>()?;
+                    let count = count.parse::<u64>()?;
                     match color {
                         "red" => game.red = std::cmp::max(game.red, count),
                         "green" => game.green = std::cmp::max(game.green, count),
@@ -76,7 +76,7 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn part1(puzzle: &Puzzle) -> usize {
+fn part1(puzzle: &Puzzle) -> u64 {
     puzzle
         .games
         .iter()
@@ -85,7 +85,7 @@ fn part1(puzzle: &Puzzle) -> usize {
         .sum()
 }
 
-fn part2(puzzle: &Puzzle) -> usize {
+fn part2(puzzle: &Puzzle) -> u64 {
     puzzle
         .games
         .iter()

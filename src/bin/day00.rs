@@ -17,7 +17,7 @@ use std::io::{self, Read};
 use std::str::FromStr;
 
 struct Puzzle {
-    values: Vec<usize>,
+    values: Vec<u64>,
 }
 
 impl FromStr for Puzzle {
@@ -34,11 +34,11 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn part1(puzzle: &Puzzle) -> usize {
+fn part1(puzzle: &Puzzle) -> u64 {
     puzzle.values.iter().sum()
 }
 
-fn part2(puzzle: &Puzzle) -> usize {
+fn part2(puzzle: &Puzzle) -> u64 {
     *puzzle.values.iter().max().unwrap()
 }
 
