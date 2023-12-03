@@ -13,22 +13,24 @@
 //  limitations under the License.
 
 use aoc_2023::geometry::Point2;
-use aoc_2023::{oops, oops::Oops};
+use aoc_2023::oops::Oops;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Read};
 use std::str::FromStr;
 
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
+struct Id(usize);
+
 #[derive(Clone, Copy, Debug)]
 enum Cell {
-    Number(usize),
+    Number(Id),
     Symbol(char),
-    Empty,
 }
 
 #[derive(Debug)]
 struct Puzzle {
     cells: HashMap<Point2, Cell>,
-    values: HashMap<usize, usize>,
+    values: HashMap<Id, usize>,
 }
 
 impl FromStr for Puzzle {
@@ -37,33 +39,31 @@ impl FromStr for Puzzle {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut cells = HashMap::new();
         let mut values = HashMap::new();
-        let mut value_id: usize = 0;
+        let mut id: Id = Id(0);
         for (y, line) in s.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
-                let x = x.try_into()?;
-                let y = y.try_into()?;
-                cells.insert(
-                    Point2::new(x, y),
-                    if c.is_numeric() {
-                        let digit = c as usize - '0' as usize;
-                        // Check if the previous point is a number.
+                let (x, y) = (x.try_into()?, y.try_into()?);
+                if c.is_numeric() {
+                    let digit = c as usize - '0' as usize;
+                    cells.insert(
+                        Point2::new(x, y),
                         if let Some(Cell::Number(previous_value_id)) =
                             cells.get(&Point2::new(x - 1, y))
                         {
+                            // If the previous cell is a number, update the shared value and
+                            // associate this cell with the same shared value.
                             let val = values.get_mut(previous_value_id).unwrap();
                             *val = *val * 10 + digit;
                             Cell::Number(*previous_value_id)
                         } else {
-                            value_id += 1;
-                            values.insert(value_id, digit);
-                            Cell::Number(value_id)
-                        }
-                    } else if c == '.' {
-                        Cell::Empty
-                    } else {
-                        Cell::Symbol(c)
-                    },
-                );
+                            id.0 += 1;
+                            values.insert(id, digit);
+                            Cell::Number(id)
+                        },
+                    );
+                } else if c != '.' {
+                    cells.insert(Point2::new(x, y), Cell::Symbol(c));
+                };
             }
         }
         Ok(Puzzle { cells, values })
