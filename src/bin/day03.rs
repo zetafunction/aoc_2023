@@ -19,7 +19,7 @@ use std::io::{self, Read};
 use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
-struct Id(usize);
+struct Id(u32);
 
 #[derive(Clone, Copy, Debug)]
 enum Cell {
@@ -30,7 +30,7 @@ enum Cell {
 #[derive(Debug)]
 struct Puzzle {
     cells: HashMap<Point2, Cell>,
-    values: HashMap<Id, usize>,
+    values: HashMap<Id, u64>,
 }
 
 impl FromStr for Puzzle {
@@ -38,13 +38,12 @@ impl FromStr for Puzzle {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut cells = HashMap::new();
-        let mut values = HashMap::new();
+        let mut values = HashMap::<Id, u64>::new();
         let mut next_id: Id = Id(0);
         for (y, line) in s.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
                 let (x, y) = (x.try_into()?, y.try_into()?);
-                if c.is_ascii_digit() {
-                    let digit = c as usize - '0' as usize;
+                if let Some(digit) = c.to_digit(10).map(u64::from) {
                     let id = match cells.get(&Point2::new(x - 1, y)) {
                         Some(Cell::Number(previous_id)) => *previous_id,
                         _ => {
@@ -70,7 +69,7 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn part1(puzzle: &Puzzle) -> usize {
+fn part1(puzzle: &Puzzle) -> u64 {
     puzzle
         .cells
         .iter()
@@ -92,7 +91,7 @@ fn part1(puzzle: &Puzzle) -> usize {
         .sum()
 }
 
-fn part2(puzzle: &Puzzle) -> usize {
+fn part2(puzzle: &Puzzle) -> u64 {
     puzzle
         .cells
         .iter()
