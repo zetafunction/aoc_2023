@@ -75,7 +75,7 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
 }
 
 fn part1(puzzle: &Puzzle) -> usize {
-    let value_ids = puzzle
+    puzzle
         .cells
         .iter()
         .filter_map(|(p, &c)| {
@@ -90,8 +90,7 @@ fn part1(puzzle: &Puzzle) -> usize {
                 None
             }
         })
-        .collect::<HashSet<_>>();
-    value_ids
+        .collect::<HashSet<_>>()
         .iter()
         .map(|value_id| puzzle.values.get(value_id).unwrap())
         .sum()
