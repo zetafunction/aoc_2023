@@ -102,25 +102,21 @@ fn part2(puzzle: &Puzzle) -> usize {
         .cells
         .iter()
         .filter_map(|(p, &cell)| match cell {
-            Cell::Symbol(sym) if sym == '*' => {
+            Cell::Symbol('*') => {
                 let ids = p
                     .all_neighbors()
-                    .filter_map(|neighbor| {
-                        if let Some(Cell::Number(value_id)) = puzzle.cells.get(&neighbor) {
-                            Some(value_id)
-                        } else {
-                            None
-                        }
+                    .filter_map(|neighbor| match puzzle.cells.get(&neighbor) {
+                        Some(Cell::Number(value_id)) => Some(value_id),
+                        _ => None,
                     })
                     .collect::<HashSet<_>>();
-                if ids.len() == 2 {
-                    Some(
+                match ids.len() {
+                    2 => Some(
                         ids.into_iter()
                             .map(|id| puzzle.values.get(id).unwrap())
                             .product::<usize>(),
-                    )
-                } else {
-                    None
+                    ),
+                    _ => None,
                 }
             }
             _ => None,
