@@ -82,10 +82,8 @@ fn part2(puzzle: &Puzzle) -> u64 {
     let mut copies = vec![1; winning_counts.len()];
     for (idx, count) in winning_counts.enumerate() {
         let current = copies[idx];
-        for copy_idx in idx + 1..idx + 1 + count {
-            if let Some(count) = copies.get_mut(copy_idx) {
-                *count += current;
-            }
+        for copy_idx in idx + 1..std::cmp::min(idx + 1 + count, copies.len()) {
+            copies[copy_idx] += current;
         }
     }
     copies.iter().sum()
