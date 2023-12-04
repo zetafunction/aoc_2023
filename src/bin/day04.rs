@@ -32,13 +32,11 @@ impl FromStr for Card {
             .ok_or_else(|| oops!("missing delim"))?;
         Ok(Card {
             winning: winning_str
-                .split(' ')
-                .filter(|s| !s.is_empty())
+                .split_whitespace()
                 .map(str::parse)
                 .collect::<Result<_, _>>()?,
             have: have_str
-                .split(' ')
-                .filter(|s| !s.is_empty())
+                .split_whitespace()
                 .map(str::parse)
                 .collect::<Result<_, _>>()?,
         })
