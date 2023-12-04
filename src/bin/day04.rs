@@ -65,14 +65,12 @@ fn part1(puzzle: &Puzzle) -> u64 {
     puzzle
         .cards
         .iter()
-        .map(|c| {
-            let count = c.have.iter().filter(|n| c.winning.contains(n)).count();
-            if count > 0 {
-                2u64.pow((count - 1).try_into().unwrap())
-            } else {
-                0
-            }
-        })
+        .map(
+            |c| match c.have.iter().filter(|n| c.winning.contains(n)).count() {
+                0 => 0,
+                count => 2u64.pow((count - 1).try_into().unwrap()),
+            },
+        )
         .sum()
 }
 
