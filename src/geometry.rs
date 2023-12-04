@@ -29,7 +29,7 @@ impl Point2 {
 
     #[must_use]
     pub fn all_neighbors(&self) -> Neighbors2 {
-        const NEIGHBOR_VECTORS: &[Vector2] = &[
+        const NEIGHBOR_VECTORS: [Vector2; 8] = [
             Vector2::new(-1, 0),
             Vector2::new(1, 0),
             Vector2::new(0, -1),
@@ -48,7 +48,7 @@ impl Point2 {
 
     #[must_use]
     pub fn cardinal_neighbors(&self) -> Neighbors2 {
-        const NEIGHBOR_VECTORS: &[Vector2] = &[
+        const NEIGHBOR_VECTORS: [Vector2; 4] = [
             Vector2::new(-1, 0),
             Vector2::new(1, 0),
             Vector2::new(0, -1),
@@ -63,7 +63,7 @@ impl Point2 {
 
     #[must_use]
     pub fn diagonal_neighbors(&self) -> Neighbors2 {
-        const NEIGHBOR_VECTORS: &[Vector2] = &[
+        const NEIGHBOR_VECTORS: [Vector2; 4] = [
             Vector2::new(-1, -1),
             Vector2::new(-1, 1),
             Vector2::new(1, -1),
@@ -195,7 +195,7 @@ impl Point3 {
 
     #[must_use]
     pub fn all_neighbors(&self) -> Neighbors3 {
-        const NEIGHBOR_VECTORS: &[Vector3] = &[
+        const NEIGHBOR_VECTORS: [Vector3; 14] = [
             Vector3::new(-1, 0, 0),
             Vector3::new(1, 0, 0),
             Vector3::new(0, -1, 0),
@@ -220,7 +220,7 @@ impl Point3 {
 
     #[must_use]
     pub fn cardinal_neighbors(&self) -> Neighbors3 {
-        const NEIGHBOR_VECTORS: &[Vector3] = &[
+        const NEIGHBOR_VECTORS: [Vector3; 6] = [
             Vector3::new(-1, 0, 0),
             Vector3::new(1, 0, 0),
             Vector3::new(0, -1, 0),
@@ -237,7 +237,7 @@ impl Point3 {
 
     #[must_use]
     pub fn diagonal_neighbors(&self) -> Neighbors3 {
-        const NEIGHBOR_VECTORS: &[Vector3] = &[
+        const NEIGHBOR_VECTORS: [Vector3; 8] = [
             Vector3::new(-1, -1, -1),
             Vector3::new(-1, -1, 1),
             Vector3::new(-1, 1, -1),

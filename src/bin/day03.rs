@@ -44,12 +44,13 @@ impl FromStr for Puzzle {
             for (x, c) in line.chars().enumerate() {
                 let (x, y) = (x.try_into()?, y.try_into()?);
                 if let Some(digit) = c.to_digit(10).map(u64::from) {
-                    let id = match cells.get(&Point2::new(x - 1, y)) {
-                        Some(Cell::Number(previous_id)) => *previous_id,
-                        _ => {
-                            next_id.0 += 1;
-                            next_id
-                        }
+                    let id = if let Some(Cell::Number(previous_id)) =
+                        cells.get(&Point2::new(x - 1, y))
+                    {
+                        *previous_id
+                    } else {
+                        next_id.0 += 1;
+                        next_id
                     };
                     cells.insert(Point2::new(x, y), Cell::Number(id));
                     values
