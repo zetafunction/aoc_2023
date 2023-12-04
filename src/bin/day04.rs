@@ -78,10 +78,9 @@ fn part2(puzzle: &Puzzle) -> u64 {
     let winning_counts = puzzle
         .cards
         .iter()
-        .map(|c| c.have.iter().filter(|n| c.winning.contains(n)).count())
-        .collect::<Vec<_>>();
+        .map(|c| c.have.iter().filter(|n| c.winning.contains(n)).count());
     let mut copies = vec![1; winning_counts.len()];
-    for (idx, count) in winning_counts.iter().enumerate() {
+    for (idx, count) in winning_counts.enumerate() {
         let current = copies[idx];
         for copy_idx in idx + 1..idx + 1 + count {
             if let Some(count) = copies.get_mut(copy_idx) {
