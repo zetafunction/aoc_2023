@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+use aoc_2023::time;
 use aoc_2023::{oops, oops::Oops};
 use std::collections::BTreeMap;
 use std::io::{self, Read};
@@ -213,10 +214,10 @@ fn main() -> Result<(), Oops> {
     io::stdin().read_to_string(&mut input)?;
     let input = input;
 
-    let puzzle = parse(&input)?;
+    let puzzle = time!(parse(&input)?);
 
-    println!("{}", part1(&puzzle));
-    println!("{}", part2(&puzzle));
+    println!("{}", time!(part1(&puzzle)));
+    println!("{}", time!(part2(&puzzle)));
 
     Ok(())
 }

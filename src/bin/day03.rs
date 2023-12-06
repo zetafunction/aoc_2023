@@ -14,6 +14,7 @@
 
 use aoc_2023::geometry::Point2;
 use aoc_2023::oops::Oops;
+use aoc_2023::time;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Read};
 use std::str::FromStr;
@@ -123,10 +124,10 @@ fn main() -> Result<(), Oops> {
     io::stdin().read_to_string(&mut input)?;
     let input = input;
 
-    let puzzle = parse(&input)?;
+    let puzzle = time!(parse(&input)?);
 
-    println!("{}", part1(&puzzle));
-    println!("{}", part2(&puzzle));
+    println!("{}", time!(part1(&puzzle)));
+    println!("{}", time!(part2(&puzzle)));
 
     Ok(())
 }
