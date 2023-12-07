@@ -36,22 +36,6 @@ enum Card {
     Joker = 1,
 }
 
-const NON_JOKERS: [Card; 13] = [
-    Card::A,
-    Card::K,
-    Card::Q,
-    Card::J,
-    Card::T,
-    Card::Nine,
-    Card::Eight,
-    Card::Seven,
-    Card::Six,
-    Card::Five,
-    Card::Four,
-    Card::Three,
-    Card::Two,
-];
-
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 enum Rank {
     FiveOfAKind = 7,
@@ -133,60 +117,36 @@ fn classify(cards: &[Card; 5]) -> Rank {
 }
 
 fn classify_joker(cards: &[Card; 5]) -> Rank {
-    let joker_count = cards.iter().filter(|&&card| card == Card::Joker).count();
-    let non_jokers = cards
-        .iter()
-        .filter(|&&card| card != Card::Joker)
-        .collect::<Vec<_>>();
-    match joker_count {
-        5 => Rank::FiveOfAKind,
-        4 => Rank::FiveOfAKind,
-        3 => {
-            if non_jokers[0] == non_jokers[1] {
-                Rank::FiveOfAKind
+    let mut cards = *cards;
+    cards.sort();
+    // Find the most common card
+    let (replacement, _, _, _) = cards.iter().fold(
+        (Card::Joker, 0, Card::Joker, 0),
+        |(max_run_card, max_run_len, cur_run_card, cur_run_len), &card| {
+            if card == max_run_card {
+                (max_run_card, max_run_len + 1, max_run_card, max_run_len + 1)
+            } else if max_run_card == Card::Joker {
+                // A run of any non-joker card should supersede a run of any length of joker cards.
+                (card, 1, card, 1)
+            } else if card == cur_run_card {
+                if cur_run_len + 1 >= max_run_len {
+                    (cur_run_card, cur_run_len + 1, cur_run_card, cur_run_len + 1)
+                } else {
+                    (max_run_card, max_run_len, cur_run_card, cur_run_len + 1)
+                }
             } else {
-                Rank::FourOfAKind
+                (max_run_card, max_run_len, card, 1)
             }
+        },
+    );
+    // Technically unnecessary for a hand of all jokers, but also harmless.
+    for card in &mut cards {
+        if *card != Card::Joker {
+            break;
         }
-        2 => {
-            let mut test_cards = [Card::Joker; 5];
-            test_cards[0] = *non_jokers[0];
-            test_cards[1] = *non_jokers[1];
-            test_cards[2] = *non_jokers[2];
-            NON_JOKERS
-                .iter()
-                .map(|&joker1| {
-                    test_cards[3] = joker1;
-                    NON_JOKERS
-                        .iter()
-                        .map(|&joker2| {
-                            test_cards[4] = joker2;
-                            classify(&test_cards)
-                        })
-                        .max()
-                        .unwrap()
-                })
-                .max()
-                .unwrap()
-        }
-        1 => {
-            let mut test_cards = [Card::Joker; 5];
-            test_cards[0] = *non_jokers[0];
-            test_cards[1] = *non_jokers[1];
-            test_cards[2] = *non_jokers[2];
-            test_cards[3] = *non_jokers[3];
-            NON_JOKERS
-                .iter()
-                .map(|&joker| {
-                    test_cards[4] = joker;
-                    classify(&test_cards)
-                })
-                .max()
-                .unwrap()
-        }
-        0 => classify(cards),
-        _ => todo!(),
+        *card = replacement;
     }
+    classify(&cards)
 }
 
 impl FromStr for Hand {
