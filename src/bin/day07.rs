@@ -64,22 +64,25 @@ enum Rank {
     HighCard = 1,
 }
 
-fn with_jokers(cards: &Vec<Card>) -> Vec<Card> {
+fn with_jokers(cards: &[Card; 5]) -> [Card; 5] {
+    let mut cards = *cards;
+    for card in &mut cards {
+        if *card == Card::J {
+            *card = Card::Joker;
+        }
+    }
     cards
-        .iter()
-        .map(|&card| if card == Card::J { Card::Joker } else { card })
-        .collect()
 }
 
 #[derive(Debug, Eq)]
 struct Hand {
-    cards: Vec<Card>,
+    cards: [Card; 5],
     rank: Rank,
 }
 
 #[derive(Debug, Eq)]
 struct JokerHand {
-    cards: Vec<Card>,
+    cards: [Card; 5],
     rank: Rank,
 }
 
@@ -198,7 +201,7 @@ struct Puzzle {
     joker_lines: Vec<JokerLine>,
 }
 
-fn classify(cards: &[Card]) -> Rank {
+fn classify(cards: &[Card; 5]) -> Rank {
     let mut unique_cards = HashMap::new();
     for card in cards {
         unique_cards
@@ -228,7 +231,7 @@ fn classify(cards: &[Card]) -> Rank {
     }
 }
 
-fn classify_joker(cards: &Vec<Card>) -> Rank {
+fn classify_joker(cards: &[Card; 5]) -> Rank {
     let joker_count = cards.iter().filter(|&&card| card == Card::Joker).count();
     let non_jokers = cards
         .iter()
@@ -289,27 +292,28 @@ impl FromStr for Hand {
     type Err = Oops;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let cards = s
-            .chars()
-            .map(|c| {
-                Ok(match c {
-                    'A' => Card::A,
-                    'K' => Card::K,
-                    'Q' => Card::Q,
-                    'J' => Card::J,
-                    'T' => Card::T,
-                    '9' => Card::Nine,
-                    '8' => Card::Eight,
-                    '7' => Card::Seven,
-                    '6' => Card::Six,
-                    '5' => Card::Five,
-                    '4' => Card::Four,
-                    '3' => Card::Three,
-                    '2' => Card::Two,
-                    _ => Err(oops!("bad card"))?,
-                })
-            })
-            .collect::<Result<Vec<_>, Self::Err>>()?;
+        let mut cards = [Card::Joker; 5];
+        for (i, c) in s.chars().enumerate() {
+            if i >= cards.len() {
+                return Err(oops!("too many cards"));
+            }
+            cards[i] = match c {
+                'A' => Card::A,
+                'K' => Card::K,
+                'Q' => Card::Q,
+                'J' => Card::J,
+                'T' => Card::T,
+                '9' => Card::Nine,
+                '8' => Card::Eight,
+                '7' => Card::Seven,
+                '6' => Card::Six,
+                '5' => Card::Five,
+                '4' => Card::Four,
+                '3' => Card::Three,
+                '2' => Card::Two,
+                _ => return Err(oops!("bad card")),
+            };
+        }
         let rank = classify(&cards);
         Ok(Hand { cards, rank })
     }
