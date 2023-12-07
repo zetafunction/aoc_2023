@@ -14,7 +14,6 @@
 
 use aoc_2023::time;
 use aoc_2023::{oops, oops::Oops};
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::{self, Read};
 use std::str::FromStr;
@@ -74,125 +73,28 @@ fn with_jokers(cards: &[Card; 5]) -> [Card; 5] {
     cards
 }
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 struct Hand {
-    cards: [Card; 5],
     rank: Rank,
+    cards: [Card; 5],
 }
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 struct JokerHand {
-    cards: [Card; 5],
     rank: Rank,
+    cards: [Card; 5],
 }
 
-impl PartialEq for Hand {
-    fn eq(&self, other: &Self) -> bool {
-        std::iter::zip(self.cards.iter(), other.cards.iter()).all(|(x, y)| x == y)
-    }
-}
-
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
-    }
-}
-
-impl Ord for Hand {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.rank.cmp(&other.rank) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Greater => Ordering::Greater,
-            Ordering::Equal => {
-                for (x, y) in std::iter::zip(self.cards.iter(), other.cards.iter()) {
-                    match x.cmp(y) {
-                        Ordering::Less => return Ordering::Less,
-                        Ordering::Greater => return Ordering::Greater,
-                        _ => (),
-                    }
-                }
-                return Ordering::Equal;
-            }
-        }
-    }
-}
-
-impl PartialEq for JokerHand {
-    fn eq(&self, other: &Self) -> bool {
-        std::iter::zip(self.cards.iter(), other.cards.iter()).all(|(x, y)| x == y)
-    }
-}
-
-impl PartialOrd for JokerHand {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
-    }
-}
-
-impl Ord for JokerHand {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.rank.cmp(&other.rank) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Greater => Ordering::Greater,
-            Ordering::Equal => {
-                for (x, y) in std::iter::zip(self.cards.iter(), other.cards.iter()) {
-                    match x.cmp(y) {
-                        Ordering::Less => return Ordering::Less,
-                        Ordering::Greater => return Ordering::Greater,
-                        _ => (),
-                    }
-                }
-                return Ordering::Equal;
-            }
-        }
-    }
-}
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 struct Line {
     hand: Hand,
     bid: u64,
 }
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 struct JokerLine {
     hand: JokerHand,
     bid: u64,
-}
-
-impl PartialEq for JokerLine {
-    fn eq(&self, other: &Self) -> bool {
-        self.hand.eq(&other.hand)
-    }
-}
-
-impl PartialOrd for JokerLine {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
-    }
-}
-
-impl Ord for JokerLine {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.hand.cmp(&other.hand)
-    }
-}
-
-impl PartialEq for Line {
-    fn eq(&self, other: &Self) -> bool {
-        self.hand.eq(&other.hand)
-    }
-}
-
-impl PartialOrd for Line {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
-    }
-}
-
-impl Ord for Line {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.hand.cmp(&other.hand)
-    }
 }
 
 #[derive(Debug)]
@@ -226,7 +128,7 @@ fn classify(cards: &[Card; 5]) -> Rank {
             }
         }
         1 => Rank::FiveOfAKind,
-        _ => todo!(),
+        _ => panic!("umm"),
     }
 }
 
