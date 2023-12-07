@@ -202,25 +202,24 @@ struct Puzzle {
 }
 
 fn classify(cards: &[Card; 5]) -> Rank {
-    let mut unique_cards = HashMap::new();
-    for card in cards {
-        unique_cards
-            .entry(card)
-            .and_modify(|x| *x += 1)
+    let unique = cards.iter().fold(HashMap::new(), |mut map, card| {
+        map.entry(*card)
+            .and_modify(|count| *count += 1)
             .or_insert(1);
-    }
-    match unique_cards.len() {
+        map
+    });
+    match unique.len() {
         5 => Rank::HighCard,
         4 => Rank::OnePair,
         3 => {
-            if unique_cards.iter().any(|(_, &count)| count == 3) {
+            if unique.iter().any(|(_, &count)| count == 3) {
                 Rank::Triple
             } else {
                 Rank::TwoPair
             }
         }
         2 => {
-            if unique_cards.iter().any(|(_, &count)| count == 1) {
+            if unique.iter().any(|(_, &count)| count == 1) {
                 Rank::FourOfAKind
             } else {
                 Rank::FullHouse
