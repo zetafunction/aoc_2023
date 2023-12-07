@@ -64,27 +64,15 @@ struct Hand {
 }
 
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
-struct JokerHand {
-    rank: Rank,
-    cards: [Card; 5],
-}
-
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 struct Line {
     hand: Hand,
-    bid: u64,
-}
-
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
-struct JokerLine {
-    hand: JokerHand,
     bid: u64,
 }
 
 #[derive(Debug)]
 struct Puzzle {
     lines: Vec<Line>,
-    joker_lines: Vec<JokerLine>,
+    joker_lines: Vec<Line>,
 }
 
 fn classify(cards: &[Card; 5]) -> Rank {
@@ -204,8 +192,8 @@ impl FromStr for Puzzle {
             .map(|line: &Line| {
                 let cards = with_jokers(&line.hand.cards);
                 let rank = classify_joker(&cards);
-                JokerLine {
-                    hand: JokerHand { cards, rank },
+                Line {
+                    hand: Hand { cards, rank },
                     bid: line.bid,
                 }
             })
