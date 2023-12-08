@@ -14,5 +14,6 @@
 
 pub mod geometry;
 pub mod itertools;
+pub mod math;
 pub mod oops;
 pub mod timing;

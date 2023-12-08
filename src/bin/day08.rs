@@ -97,7 +97,7 @@ fn part1(puzzle: &Puzzle) -> u64 {
 }
 
 fn part2(puzzle: &Puzzle) -> u64 {
-    let common_factors = puzzle
+    puzzle
         .nodes
         .keys()
         .filter(|key| key.ends_with('A'))
@@ -116,30 +116,7 @@ fn part2(puzzle: &Puzzle) -> u64 {
             }
             0
         })
-        // Factor and find the LCM of all step counts.
-        .fold(HashMap::new(), |mut common_factors, mut num| {
-            let mut factor = 2;
-            while factor <= num {
-                let mut count = 0;
-                while num % factor == 0 || num == factor {
-                    count += 1;
-                    num /= factor;
-                }
-                if count > 0 {
-                    common_factors
-                        .entry(factor)
-                        .and_modify(|current| {
-                            if count > *current {
-                                *current = count;
-                            }
-                        })
-                        .or_insert(count);
-                }
-                factor += 1;
-            }
-            common_factors
-        });
-    common_factors.iter().map(|(k, v)| k * v).product()
+        .fold(1, aoc_2023::math::lcm)
 }
 
 fn main() -> Result<(), Oops> {
