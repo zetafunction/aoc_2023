@@ -119,27 +119,21 @@ fn part2(puzzle: &Puzzle) -> u64 {
         // Factor and find the LCM of all step counts.
         .fold(HashMap::new(), |mut common_factors, mut num| {
             let mut factor = 2;
-            let mut factors = HashMap::new();
             while factor <= num {
-                if num % factor == 0 || num == factor {
-                    factors
-                        .entry(factor)
-                        .and_modify(|count| *count += 1)
-                        .or_insert(1);
+                let mut count = 0;
+                while num % factor == 0 || num == factor {
+                    count += 1;
                     num /= factor;
-                } else {
-                    factor += 1;
                 }
-            }
-            for (factor, count) in factors {
                 common_factors
                     .entry(factor)
-                    .and_modify(|count2| {
-                        if count > *count2 {
-                            *count2 = count;
+                    .and_modify(|current| {
+                        if count > *current {
+                            *current = count;
                         }
                     })
                     .or_insert(count);
+                factor += 1;
             }
             common_factors
         });
