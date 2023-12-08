@@ -37,14 +37,14 @@ impl FromStr for Node {
     type Err = Oops;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (dst_left, dst_right) = s.split_once(", ").ok_or_else(|| oops!("bad dst format"))?;
-        let left = dst_left
+        let (left, right) = s.split_once(", ").ok_or_else(|| oops!("bad node"))?;
+        let left = left
             .strip_prefix('(')
-            .ok_or_else(|| oops!("bad left dst"))?
+            .ok_or_else(|| oops!("bad left"))?
             .to_string();
-        let right = dst_right
+        let right = right
             .strip_suffix(')')
-            .ok_or_else(|| oops!("bad right dst"))?
+            .ok_or_else(|| oops!("bad right"))?
             .to_string();
         Ok(Node { left, right })
     }
@@ -97,10 +97,12 @@ fn part1(puzzle: &Puzzle) -> u64 {
 }
 
 fn part2(puzzle: &Puzzle) -> u64 {
-    let factors = puzzle
+    let common_factors = puzzle
         .nodes
         .keys()
         .filter(|key| key.ends_with('A'))
+        // Determine the number of steps for each cycle, assuming that the initial
+        // journey provides the cycle length.
         .map(|mut current| {
             for (step, dir) in std::iter::zip(1u64.., puzzle.directions.iter().cycle()) {
                 let node = puzzle.nodes.get(current).unwrap();
@@ -114,7 +116,8 @@ fn part2(puzzle: &Puzzle) -> u64 {
             }
             0
         })
-        .fold(HashMap::new(), |mut m, mut num| {
+        // Factor and find the LCM of all step counts.
+        .fold(HashMap::new(), |mut common_factors, mut num| {
             let mut factor = 2;
             let mut factors = HashMap::new();
             while factor <= num {
@@ -129,7 +132,8 @@ fn part2(puzzle: &Puzzle) -> u64 {
                 }
             }
             for (factor, count) in factors {
-                m.entry(factor)
+                common_factors
+                    .entry(factor)
                     .and_modify(|count2| {
                         if count > *count2 {
                             *count2 = count;
@@ -137,9 +141,9 @@ fn part2(puzzle: &Puzzle) -> u64 {
                     })
                     .or_insert(count);
             }
-            m
+            common_factors
         });
-    factors.iter().map(|(k, v)| k * v).product()
+    common_factors.iter().map(|(k, v)| k * v).product()
 }
 
 fn main() -> Result<(), Oops> {
