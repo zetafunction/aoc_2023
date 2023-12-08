@@ -125,14 +125,16 @@ fn part2(puzzle: &Puzzle) -> u64 {
                     count += 1;
                     num /= factor;
                 }
-                common_factors
-                    .entry(factor)
-                    .and_modify(|current| {
-                        if count > *current {
-                            *current = count;
-                        }
-                    })
-                    .or_insert(count);
+                if count > 0 {
+                    common_factors
+                        .entry(factor)
+                        .and_modify(|current| {
+                            if count > *current {
+                                *current = count;
+                            }
+                        })
+                        .or_insert(count);
+                }
                 factor += 1;
             }
             common_factors
