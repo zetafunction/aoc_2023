@@ -108,32 +108,26 @@ fn classify_joker(cards: &[Card; 5]) -> Rank {
     let mut cards = *cards;
     cards.sort();
     // Find the most common card
-    let (replacement, _, _, _) = cards.iter().fold(
-        (Card::Joker, 0, Card::Joker, 0),
-        |(max_run_card, max_run_len, cur_run_card, cur_run_len), &card| {
-            if card == max_run_card {
-                (max_run_card, max_run_len + 1, max_run_card, max_run_len + 1)
-            } else if max_run_card == Card::Joker {
-                // A run of any non-joker card should supersede a run of any length of joker cards.
-                (card, 1, card, 1)
-            } else if card == cur_run_card {
-                if cur_run_len + 1 >= max_run_len {
-                    (cur_run_card, cur_run_len + 1, cur_run_card, cur_run_len + 1)
+    let (jokers, max_card, _, _, _) = cards.iter().fold(
+        (0, Card::Joker, 0, Card::Joker, 0),
+        |(jokers, max_card, max_len, cur_card, cur_len), &card| {
+            if card == Card::Joker {
+                (jokers + 1, Card::Joker, jokers + 1, Card::Joker, 0)
+            } else if card == max_card {
+                (jokers, max_card, max_len + 1, max_card, max_len + 1)
+            } else if card == cur_card {
+                if cur_len + 1 >= max_len {
+                    (jokers, cur_card, cur_len + 1, cur_card, cur_len + 1)
                 } else {
-                    (max_run_card, max_run_len, cur_run_card, cur_run_len + 1)
+                    (jokers, max_card, max_len, cur_card, cur_len + 1)
                 }
             } else {
-                (max_run_card, max_run_len, card, 1)
+                (jokers, max_card, max_len, card, 1)
             }
         },
     );
     // Technically unnecessary for a hand of all jokers, but also harmless.
-    for card in &mut cards {
-        if *card != Card::Joker {
-            break;
-        }
-        *card = replacement;
-    }
+    cards[0..jokers].fill(max_card);
     classify(&cards)
 }
 
