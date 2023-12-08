@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use aoc_2023::oops::Oops;
 use aoc_2023::time;
-use aoc_2023::{oops, oops::Oops};
 use std::collections::BTreeMap;
 use std::io::{self, Read};
 use std::str::FromStr;

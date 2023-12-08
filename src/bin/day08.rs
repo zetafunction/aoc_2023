@@ -14,7 +14,7 @@
 
 use aoc_2023::time;
 use aoc_2023::{oops, oops::Oops};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io::{self, Read};
 use std::str::FromStr;
 
@@ -39,11 +39,11 @@ impl FromStr for Node {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (dst_left, dst_right) = s.split_once(", ").ok_or_else(|| oops!("bad dst format"))?;
         let left = dst_left
-            .strip_prefix("(")
+            .strip_prefix('(')
             .ok_or_else(|| oops!("bad left dst"))?
             .to_string();
         let right = dst_right
-            .strip_suffix(")")
+            .strip_suffix(')')
             .ok_or_else(|| oops!("bad right dst"))?
             .to_string();
         Ok(Node { left, right })
@@ -97,17 +97,14 @@ fn part1(puzzle: &Puzzle) -> u64 {
 }
 
 fn part2(puzzle: &Puzzle) -> u64 {
-    let mut currents: Vec<_> = puzzle
+    let factors = puzzle
         .nodes
         .keys()
         .filter(|key| key.ends_with('A'))
-        .collect();
-    let factors = currents
-        .iter_mut()
-        .map(|current| {
+        .map(|mut current| {
             for (step, dir) in std::iter::zip(1u64.., puzzle.directions.iter().cycle()) {
-                let node = puzzle.nodes.get(*current).unwrap();
-                *current = match dir {
+                let node = puzzle.nodes.get(current).unwrap();
+                current = match dir {
                     Dir::Left => &node.left,
                     Dir::Right => &node.right,
                 };
@@ -121,7 +118,7 @@ fn part2(puzzle: &Puzzle) -> u64 {
             let mut factor = 2;
             let mut factors = HashMap::new();
             while factor <= num {
-                if num % factor == 0 {
+                if num % factor == 0 || num == factor {
                     factors
                         .entry(factor)
                         .and_modify(|count| *count += 1)

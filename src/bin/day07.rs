@@ -47,8 +47,7 @@ enum Rank {
     HighCard = 1,
 }
 
-fn with_jokers(cards: &[Card; 5]) -> [Card; 5] {
-    let mut cards = *cards;
+fn with_jokers(mut cards: [Card; 5]) -> [Card; 5] {
     for card in &mut cards {
         if *card == Card::J {
             *card = Card::Joker;
@@ -75,7 +74,7 @@ struct Puzzle {
     joker_lines: Vec<Line>,
 }
 
-fn classify(cards: &[Card; 5]) -> Rank {
+fn classify(cards: [Card; 5]) -> Rank {
     let unique = cards.iter().fold(HashMap::new(), |mut map, card| {
         map.entry(*card)
             .and_modify(|count| *count += 1)
@@ -104,8 +103,8 @@ fn classify(cards: &[Card; 5]) -> Rank {
     }
 }
 
-fn classify_joker(cards: &[Card; 5]) -> Rank {
-    let mut cards = *cards;
+fn classify_joker(cards: [Card; 5]) -> Rank {
+    let mut cards = cards;
     cards.sort();
     // Find the most common card
     let (jokers, max_card, _, _, _) = cards.iter().fold(
@@ -128,7 +127,7 @@ fn classify_joker(cards: &[Card; 5]) -> Rank {
     );
     // Technically unnecessary for a hand of all jokers, but also harmless.
     cards[0..jokers].fill(max_card);
-    classify(&cards)
+    classify(cards)
 }
 
 impl FromStr for Hand {
@@ -157,8 +156,8 @@ impl FromStr for Hand {
                 _ => return Err(oops!("bad card")),
             };
         }
-        let rank = classify(&cards);
-        Ok(Hand { cards, rank })
+        let rank = classify(cards);
+        Ok(Hand { rank, cards })
     }
 }
 
@@ -184,10 +183,10 @@ impl FromStr for Puzzle {
         let mut joker_lines = lines
             .iter()
             .map(|line: &Line| {
-                let cards = with_jokers(&line.hand.cards);
-                let rank = classify_joker(&cards);
+                let cards = with_jokers(line.hand.cards);
+                let rank = classify_joker(cards);
                 Line {
-                    hand: Hand { cards, rank },
+                    hand: Hand { rank, cards },
                     bid: line.bid,
                 }
             })
