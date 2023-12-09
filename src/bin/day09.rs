@@ -53,13 +53,13 @@ where
         let next_line = std::iter::zip(accum[i].iter(), accum[i].iter().skip(1))
             .map(|(a, b)| b - a)
             .collect::<Vec<_>>();
-        let done = next_line.iter().all(|x| *x == 0);
-        accum.push(next_line);
-        if done {
+        if next_line.iter().all(|x| *x == 0) {
             return accum
                 .iter()
                 .rev()
                 .fold(0, |diff, seq| seq.last().unwrap() + diff);
+        } else {
+            accum.push(next_line);
         }
     }
     unreachable!();
