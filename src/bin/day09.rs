@@ -52,11 +52,12 @@ where
         let next_seq = std::iter::zip(accum[i].iter(), accum[i].iter().skip(1))
             .map(|(a, b)| b - a)
             .collect::<Vec<_>>();
-        if next_seq.iter().all(|x| *x == 0) {
+        let next_seq_first = next_seq.first().unwrap();
+        if next_seq.iter().skip(1).all(|x| x == next_seq_first) {
             return accum
                 .iter()
                 .rev()
-                .fold(0, |diff, seq| seq.last().unwrap() + diff);
+                .fold(*next_seq_first, |diff, seq| seq.last().unwrap() + diff);
         }
         accum.push(next_seq);
     }
