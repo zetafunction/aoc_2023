@@ -43,41 +43,35 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn solve<'s, Seq>(seq: Seq) -> i64
+fn solve<'s, Seq>(initial_seq: Seq) -> i64
 where
     Seq: std::iter::Iterator<Item = &'s i64>,
 {
-    let mut accum = vec![];
-    accum.push(seq.copied().collect::<Vec<_>>());
+    let mut accum = vec![initial_seq.copied().collect::<Vec<_>>()];
     for i in 0..accum[0].len() - 1 {
-        let next_line = std::iter::zip(accum[i].iter(), accum[i].iter().skip(1))
+        let next_seq = std::iter::zip(accum[i].iter(), accum[i].iter().skip(1))
             .map(|(a, b)| b - a)
             .collect::<Vec<_>>();
-        if next_line.iter().all(|x| *x == 0) {
+        if next_seq.iter().all(|x| *x == 0) {
             return accum
                 .iter()
                 .rev()
                 .fold(0, |diff, seq| seq.last().unwrap() + diff);
-        } else {
-            accum.push(next_line);
         }
+        accum.push(next_seq);
     }
     unreachable!();
 }
 
 fn part1(puzzle: &Puzzle) -> i64 {
-    puzzle
-        .values
-        .iter()
-        .map(|history| solve(history.iter()))
-        .sum()
+    puzzle.values.iter().map(|seq| solve(seq.iter())).sum()
 }
 
 fn part2(puzzle: &Puzzle) -> i64 {
     puzzle
         .values
         .iter()
-        .map(|history| solve(history.iter().rev()))
+        .map(|seq| solve(seq.iter().rev()))
         .sum()
 }
 
