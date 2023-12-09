@@ -56,11 +56,10 @@ where
         let done = next_line.iter().all(|x| *x == 0);
         accum.push(next_line);
         if done {
-            for j in (0..accum.len() - 1).rev() {
-                let next_val = accum[j + 1].last().unwrap() + accum[j].last().unwrap();
-                accum[j].push(next_val);
-            }
-            return *accum[0].last().unwrap();
+            return accum
+                .iter()
+                .rev()
+                .fold(0, |diff, seq| seq.last().unwrap() + diff);
         }
     }
     unreachable!();
