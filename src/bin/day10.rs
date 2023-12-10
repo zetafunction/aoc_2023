@@ -134,7 +134,7 @@ fn solve(puzzle: &Puzzle) -> (u64, HashSet<Point2>) {
     visited.insert(puzzle.start);
     loop {
         let mut nexts = vec![];
-        for current in currents.iter() {
+        for current in &currents {
             let current_cell = puzzle.cells.get(current).unwrap();
             let candidate = current.north();
             if current_cell.connections & NORTH != 0 && !visited.contains(&candidate) {

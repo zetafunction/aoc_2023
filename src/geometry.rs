@@ -27,18 +27,22 @@ impl Point2 {
         Point2 { x, y }
     }
 
+    #[must_use]
     pub fn north(&self) -> Self {
         Point2::new(self.x, self.y - 1)
     }
 
+    #[must_use]
     pub fn east(&self) -> Self {
         Point2::new(self.x + 1, self.y)
     }
 
+    #[must_use]
     pub fn south(&self) -> Self {
         Point2::new(self.x, self.y + 1)
     }
 
+    #[must_use]
     pub fn west(&self) -> Self {
         Point2::new(self.x - 1, self.y)
     }
@@ -187,6 +191,7 @@ impl Bounds2 {
         })
     }
 
+    #[must_use]
     pub fn outset(&self, n: i32) -> Self {
         Bounds2 {
             min: Point2::new(self.min.x - n, self.min.y - n),
