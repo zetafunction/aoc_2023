@@ -30,24 +30,30 @@ impl FromStr for Puzzle {
     type Err = Oops;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let chars = s.lines().flat_map(|line| line.chars()).collect::<Vec<_>>();
-        let height = i32::try_from(s.lines().count())?;
-        let width = i32::try_from(s.lines().count())?;
+        let mut height = 0;
+        let galaxies = std::iter::zip(0i32.., s.lines())
+            .inspect(|(y, _)| height = std::cmp::max(height, *y))
+            .flat_map(|(y, line)| {
+                std::iter::zip(0i32.., line.chars()).filter_map(move |(x, c)| {
+                    if c == '#' {
+                        Some(Point2::new(x, y))
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let height = height + 1;
+        let width = height;
 
         // Find empty rows and columns first.
         let mut empty_cols = (0i32..width).collect::<BTreeSet<_>>();
         let mut empty_rows = (0i32..height).collect::<BTreeSet<_>>();
 
-        let mut galaxies = vec![];
-
-        for y in 0i32..height {
-            for x in 0i32..width {
-                if chars[usize::try_from(y * width + x)?] == '#' {
-                    empty_cols.remove(&x);
-                    empty_rows.remove(&y);
-                    galaxies.push(Point2::new(x, y));
-                }
-            }
+        for galaxy in &galaxies {
+            empty_cols.remove(&galaxy.x);
+            empty_rows.remove(&galaxy.y);
         }
 
         Ok(Puzzle {
