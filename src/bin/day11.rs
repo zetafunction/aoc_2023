@@ -13,8 +13,8 @@
 // limitations under the License.
 
 use aoc_2023::geometry::Point2;
+use aoc_2023::oops::Oops;
 use aoc_2023::time;
-use aoc_2023::{oops, oops::Oops};
 use std::collections::BTreeSet;
 use std::io::{self, Read};
 use std::str::FromStr;
@@ -35,8 +35,8 @@ impl FromStr for Puzzle {
         let width = i32::try_from(s.lines().count())?;
 
         // Find empty rows and columns first.
-        let mut empty_cols = BTreeSet::from_iter(0i32..width);
-        let mut empty_rows = BTreeSet::from_iter(0i32..height);
+        let mut empty_cols = (0i32..width).collect::<BTreeSet<_>>();
+        let mut empty_rows = (0i32..height).collect::<BTreeSet<_>>();
 
         let mut galaxies = vec![];
 
@@ -78,7 +78,7 @@ fn solve_with_expansion_factor(puzzle: &Puzzle, factor: usize) -> u64 {
                 .map(move |j| {
                     let src = adjust_point_for_expansion_factor(puzzle, puzzle.galaxies[i], factor);
                     let dst = adjust_point_for_expansion_factor(puzzle, puzzle.galaxies[j], factor);
-                    i32::abs_diff(dst.x, src.x) + i32::abs_diff(dst.y, src.y)
+                    Point2::manhattan_distance(&src, &dst)
                 })
                 .map(u64::from)
         })
@@ -89,7 +89,7 @@ fn part1(puzzle: &Puzzle) -> u64 {
 }
 
 fn part2(puzzle: &Puzzle) -> u64 {
-    solve_with_expansion_factor(puzzle, 1000000)
+    solve_with_expansion_factor(puzzle, 1_000_000)
 }
 
 fn main() -> Result<(), Oops> {

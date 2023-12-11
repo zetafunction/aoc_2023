@@ -95,6 +95,11 @@ impl Point2 {
             iter: NEIGHBOR_VECTORS.iter(),
         }
     }
+
+    #[must_use]
+    pub fn manhattan_distance(a: &Self, b: &Self) -> u32 {
+        i32::abs_diff(a.x, b.x) + i32::abs_diff(a.y, b.y)
+    }
 }
 
 pub struct Neighbors2<'a> {
