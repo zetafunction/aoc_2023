@@ -131,8 +131,7 @@ impl FromStr for Puzzle {
 }
 
 fn do_mapping(src: u64, m: &BTreeMap<u64, Range>) -> u64 {
-    let mut elements = m.range(..=src).rev();
-    if let Some((key, info)) = elements.next() {
+    if let Some((key, info)) = m.range(..=src).next_back() {
         if src >= *key && src < *key + info.len {
             (src - *key) + info.dest
         } else {
