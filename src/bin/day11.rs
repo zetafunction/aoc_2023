@@ -22,7 +22,8 @@ use std::str::FromStr;
 #[derive(Debug)]
 struct Puzzle {
     galaxies: Vec<Point2>,
-    mega_galaxies: Vec<Point2>,
+    empty_cols: BTreeSet<i32>,
+    empty_rows: BTreeSet<i32>,
 }
 
 impl FromStr for Puzzle {
@@ -32,51 +33,27 @@ impl FromStr for Puzzle {
         let chars = s.lines().flat_map(|line| line.chars()).collect::<Vec<_>>();
         let height = i32::try_from(s.lines().count())?;
         let width = i32::try_from(s.lines().count())?;
-        // Find empty rows and columns first.
-        let mut empty_columns = BTreeSet::new();
-        empty_columns.extend(0i32..width);
-        let mut empty_rows = BTreeSet::new();
-        empty_rows.extend(0i32..height);
 
-        let mut raw_galaxies = vec![];
+        // Find empty rows and columns first.
+        let mut empty_cols = BTreeSet::from_iter(0i32..width);
+        let mut empty_rows = BTreeSet::from_iter(0i32..height);
+
+        let mut galaxies = vec![];
 
         for y in 0i32..height {
             for x in 0i32..width {
                 if chars[usize::try_from(y * width + x)?] == '#' {
-                    empty_columns.remove(&x);
+                    empty_cols.remove(&x);
                     empty_rows.remove(&y);
-                    raw_galaxies.push(Point2::new(x, y));
+                    galaxies.push(Point2::new(x, y));
                 }
             }
         }
 
-        let galaxies = raw_galaxies
-            .iter()
-            .map(|galaxy| {
-                let x_adjustment = i32::try_from(empty_columns.range(0..galaxy.x).count())?;
-                let y_adjustment = i32::try_from(empty_rows.range(0..galaxy.y).count())?;
-                Ok(Point2::new(
-                    galaxy.x + x_adjustment,
-                    galaxy.y + y_adjustment,
-                ))
-            })
-            .collect::<Result<Vec<_>, Oops>>()?;
-
-        let mega_galaxies = raw_galaxies
-            .iter()
-            .map(|galaxy| {
-                let x_adjustment = i32::try_from(empty_columns.range(0..galaxy.x).count())?;
-                let y_adjustment = i32::try_from(empty_rows.range(0..galaxy.y).count())?;
-                Ok(Point2::new(
-                    galaxy.x + x_adjustment * 999999,
-                    galaxy.y + y_adjustment * 999999,
-                ))
-            })
-            .collect::<Result<Vec<_>, Oops>>()?;
-
         Ok(Puzzle {
             galaxies,
-            mega_galaxies,
+            empty_cols,
+            empty_rows,
         })
     }
 }
@@ -85,28 +62,34 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn part1(puzzle: &Puzzle) -> u32 {
-    (0..puzzle.galaxies.len())
-        .flat_map(|i| {
-            (i + 1..puzzle.galaxies.len()).map(move |j| {
-                i32::abs_diff(puzzle.galaxies[i].x, puzzle.galaxies[j].x)
-                    + i32::abs_diff(puzzle.galaxies[i].y, puzzle.galaxies[j].y)
-            })
-        })
-        .sum()
+fn adjust_point_for_expansion_factor(puzzle: &Puzzle, point: Point2, factor: usize) -> Point2 {
+    Point2::new(
+        point.x
+            + i32::try_from(puzzle.empty_cols.range(0..point.x).count() * (factor - 1)).unwrap(),
+        point.y
+            + i32::try_from(puzzle.empty_rows.range(0..point.y).count() * (factor - 1)).unwrap(),
+    )
 }
 
-fn part2(puzzle: &Puzzle) -> u64 {
-    (0..puzzle.mega_galaxies.len())
+fn solve_with_expansion_factor(puzzle: &Puzzle, factor: usize) -> u64 {
+    (0..puzzle.galaxies.len())
         .flat_map(|i| {
             (i + 1..puzzle.galaxies.len())
                 .map(move |j| {
-                    i32::abs_diff(puzzle.mega_galaxies[i].x, puzzle.mega_galaxies[j].x)
-                        + i32::abs_diff(puzzle.mega_galaxies[i].y, puzzle.mega_galaxies[j].y)
+                    let src = adjust_point_for_expansion_factor(puzzle, puzzle.galaxies[i], factor);
+                    let dst = adjust_point_for_expansion_factor(puzzle, puzzle.galaxies[j], factor);
+                    i32::abs_diff(dst.x, src.x) + i32::abs_diff(dst.y, src.y)
                 })
                 .map(u64::from)
         })
         .sum()
+}
+fn part1(puzzle: &Puzzle) -> u64 {
+    solve_with_expansion_factor(puzzle, 2)
+}
+
+fn part2(puzzle: &Puzzle) -> u64 {
+    solve_with_expansion_factor(puzzle, 1000000)
 }
 
 fn main() -> Result<(), Oops> {
@@ -146,6 +129,13 @@ mod tests {
 
     #[test]
     fn example2() {
-        assert_eq!(2468013579, part2(&parse(SAMPLE).unwrap()));
+        assert_eq!(
+            1030,
+            solve_with_expansion_factor(&parse(SAMPLE).unwrap(), 10)
+        );
+        assert_eq!(
+            8410,
+            solve_with_expansion_factor(&parse(SAMPLE).unwrap(), 100)
+        );
     }
 }
