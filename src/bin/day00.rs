@@ -17,6 +17,7 @@ use aoc_2023::{oops, oops::Oops};
 use std::io::{self, Read};
 use std::str::FromStr;
 
+#[derive(Debug)]
 struct Puzzle {
     values: Vec<u64>,
 }
