@@ -58,8 +58,8 @@ impl FromStr for Puzzle {
             empty_rows.remove(&galaxy.y);
         }
 
-        let empty_cols = std::iter::zip(empty_cols.into_iter(), 0i32..).collect();
-        let empty_rows = std::iter::zip(empty_rows.into_iter(), 0i32..).collect();
+        let empty_cols = std::iter::zip(empty_cols, 0i32..).collect();
+        let empty_rows = std::iter::zip(empty_rows, 0i32..).collect();
 
         Ok(Puzzle {
             galaxies,
@@ -73,21 +73,9 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn adjust_point_for_expansion_factor(puzzle: &Puzzle, point: &Point2, factor: i32) -> Point2 {
-    let x_adj = puzzle
-        .empty_cols
-        .range(-1..=point.x)
-        .rev()
-        .next()
-        .unwrap()
-        .1;
-    let y_adj = puzzle
-        .empty_rows
-        .range(-1..=point.y)
-        .rev()
-        .next()
-        .unwrap()
-        .1;
+fn adjust_point_for_expansion_factor(puzzle: &Puzzle, point: Point2, factor: i32) -> Point2 {
+    let x_adj = puzzle.empty_cols.range(-1..=point.x).next_back().unwrap().1;
+    let y_adj = puzzle.empty_rows.range(-1..=point.y).next_back().unwrap().1;
     Point2::new(
         point.x + x_adj * (factor - 1),
         point.y + y_adj * (factor - 1),
@@ -98,7 +86,7 @@ fn solve_with_expansion_factor(puzzle: &Puzzle, factor: i32) -> u64 {
     let memoized = puzzle
         .galaxies
         .iter()
-        .map(|galaxy| adjust_point_for_expansion_factor(puzzle, galaxy, factor))
+        .map(|galaxy| adjust_point_for_expansion_factor(puzzle, *galaxy, factor))
         .collect::<Vec<_>>();
     (0..memoized.len())
         .flat_map(|i| {
