@@ -124,11 +124,10 @@ fn recursive_solve(
         // Try to find a position to slot the next group. A group can be slotted iff:
         // - the subsequence for the group contains only #s and ?s
         // - the element after the subsequence for the group is either EOL or '.' or '?'
-        let candidate = &spring[i..];
-        if candidate.iter().take(next_group_size).any(|c| *c == '.') {
+        if spring[i..i + next_group_size].iter().any(|c| *c == '.') {
             continue;
         }
-        match candidate.get(next_group_size) {
+        match spring.get(i + next_group_size) {
             Some('#') => {
                 if spring[i..].iter().take(next_group_size).all(|c| *c == '#') {
                     memoizer.insert(key, count);
