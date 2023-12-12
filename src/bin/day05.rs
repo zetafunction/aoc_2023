@@ -28,9 +28,9 @@ struct Range {
 
 impl Ord for Range {
     fn cmp(&self, rhs: &Self) -> Ordering {
-        self.begin
-            .cmp(&rhs.begin)
-            .then_with(|| self.end.cmp(&rhs.end))
+        self.end
+            .cmp(&rhs.end)
+            .then_with(|| self.begin.cmp(&rhs.begin))
     }
 }
 
@@ -89,10 +89,10 @@ impl FromStr for Puzzle {
 fn apply_mapping(src: u64, mapping: &BTreeMap<Range, u64>) -> u64 {
     let src_range = Range {
         begin: src,
-        end: u64::MAX,
+        end: src,
     };
-    if let Some((key, dst)) = mapping.range(..=src_range).next_back() {
-        if src < key.end {
+    if let Some((key, dst)) = mapping.range(src_range..).next() {
+        if src >= key.begin {
             (src - key.begin) + dst
         } else {
             src
