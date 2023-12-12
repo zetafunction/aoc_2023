@@ -20,9 +20,9 @@ use std::str::FromStr;
 
 #[derive(Eq, Hash, PartialEq)]
 struct Memoize {
-    unknowns_assigned: usize,
+    unknowns_left: usize,
+    records_left: usize,
     matched_until: usize,
-    records_matched: usize,
 }
 
 #[derive(Debug)]
@@ -88,19 +88,18 @@ fn recursive_solve(
     record: &[usize],
     spring: &mut [char],
     matched_until: usize,
-    unknowns_assigned: usize,
-    records_matched: usize,
 ) -> u64 {
     let key = Memoize {
-        unknowns_assigned,
+        unknowns_left: unknowns.len(),
+        records_left: record.len(),
         matched_until,
-        records_matched,
     };
+
     if let Some(count) = memoizer.get(&key) {
         return *count;
     }
 
-    if records_matched == record.len() {
+    if record.is_empty() {
         // There must be no further #s.
         if spring[matched_until..].iter().any(|c| *c == '#') {
             memoizer.insert(key, 0);
@@ -111,10 +110,8 @@ fn recursive_solve(
         }
     }
 
-    let next_group_size = record[records_matched];
-    let remaining_records = record.len() - records_matched;
-    let min_remaining_size =
-        record.iter().rev().take(remaining_records).sum::<usize>() + (remaining_records - 1);
+    let next_group_size = record[0];
+    let min_remaining_size = record.iter().sum::<usize>() + (record.len() - 1);
     let mut count = 0;
     for i in matched_until..spring.len() - min_remaining_size + 1 {
         if let Some('#') = spring[matched_until..i].iter().next_back() {
@@ -136,12 +133,9 @@ fn recursive_solve(
             }
             Some(&bch) if bch == '?' || bch == '.' => {
                 // First, tentatively consume any unknowns before this position.
-                let working = unknowns[unknowns_assigned..]
-                    .iter()
-                    .take_while(|idx| **idx < i)
-                    .count();
+                let working = unknowns.iter().take_while(|idx| **idx < i).count();
 
-                let broken = unknowns[unknowns_assigned + working..]
+                let broken = unknowns[working..]
                     .iter()
                     .take_while(|idx| **idx < i + next_group_size)
                     .count();
@@ -153,16 +147,14 @@ fn recursive_solve(
                 // Now recurse!
                 count += recursive_solve(
                     memoizer,
-                    unknowns,
-                    record,
+                    &unknowns[newly_assigned..],
+                    &record[1..],
                     spring,
                     i + next_group_size + 1,
-                    unknowns_assigned + newly_assigned,
-                    records_matched + 1,
                 );
             }
             None => {
-                if remaining_records > 1 {
+                if record.len() > 1 {
                     memoizer.insert(key, count);
                     return count;
                 }
@@ -186,7 +178,7 @@ fn part1(puzzle: &Puzzle) -> u64 {
                 .collect::<Vec<_>>();
             println!("trying {spring} with {record:?}");
             let mut spring = Vec::from_iter(spring.chars());
-            recursive_solve(&mut HashMap::new(), &unknowns, record, &mut spring, 0, 0, 0)
+            recursive_solve(&mut HashMap::new(), &unknowns, record, &mut spring, 0)
         })
         .inspect(|val| println!("{val}"))
         .sum()
@@ -202,7 +194,7 @@ fn part2(puzzle: &Puzzle) -> u64 {
                 .collect::<Vec<_>>();
             println!("trying {spring} with {record:?}");
             let mut spring = Vec::from_iter(spring.chars());
-            recursive_solve(&mut HashMap::new(), &unknowns, record, &mut spring, 0, 0, 0)
+            recursive_solve(&mut HashMap::new(), &unknowns, record, &mut spring, 0)
         })
         .inspect(|val| println!("{val}"))
         .sum()
