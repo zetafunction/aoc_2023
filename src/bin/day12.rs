@@ -19,9 +19,9 @@ use std::io::{self, Read};
 use std::str::FromStr;
 
 #[derive(Eq, Hash, PartialEq)]
-struct Memoize {
+struct Key {
     unknowns_left: usize,
-    records_left: usize,
+    record_left: usize,
     matched_until: usize,
 }
 
@@ -83,32 +83,20 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
 }
 
 fn recursive_solve(
-    memoizer: &mut HashMap<Memoize, u64>,
+    memoizer: &mut HashMap<Key, u64>,
     unknowns: &[usize],
     record: &[usize],
     spring: &str,
     matched_until: usize,
 ) -> u64 {
-    let key = Memoize {
-        unknowns_left: unknowns.len(),
-        records_left: record.len(),
-        matched_until,
-    };
-
-    if let Some(count) = memoizer.get(&key) {
-        return *count;
-    }
-
     if record.is_empty() {
         // There must be no further #s.
         if spring.as_bytes()[matched_until..]
             .iter()
             .any(|c| *c == b'#')
         {
-            memoizer.insert(key, 0);
             return 0;
         } else {
-            memoizer.insert(key, 1);
             return 1;
         }
     }
@@ -118,7 +106,6 @@ fn recursive_solve(
     let mut count = 0;
     for i in matched_until..spring.len() - min_remaining_size + 1 {
         if let Some(b'#') = spring.as_bytes()[matched_until..i].iter().next_back() {
-            memoizer.insert(key, count);
             return count;
         }
         // Try to find a position to slot the next group. A group can be slotted iff:
@@ -137,7 +124,6 @@ fn recursive_solve(
                     .take(next_group_size)
                     .all(|c| *c == b'#')
                 {
-                    memoizer.insert(key, count);
                     return count;
                 }
             }
@@ -154,27 +140,39 @@ fn recursive_solve(
                 let boundary = if bch == b'?' { 1 } else { 0 };
 
                 let newly_assigned = working + broken + boundary;
-                // Now recurse!
-                count += recursive_solve(
-                    memoizer,
-                    &unknowns[newly_assigned..],
-                    &record[1..],
-                    spring,
-                    i + next_group_size + 1,
-                );
+                let remaining_unknowns = &unknowns[newly_assigned..];
+                let remaining_record = &record[1..];
+                let matched_until = i + next_group_size + 1;
+
+                let key = Key {
+                    unknowns_left: remaining_unknowns.len(),
+                    record_left: remaining_record.len(),
+                    matched_until,
+                };
+
+                if let Some(v) = memoizer.get(&key) {
+                    count += *v;
+                } else {
+                    let v = recursive_solve(
+                        memoizer,
+                        remaining_unknowns,
+                        remaining_record,
+                        spring,
+                        matched_until,
+                    );
+                    count += v;
+                    memoizer.insert(key, v);
+                }
             }
             None => {
                 if record.len() > 1 {
-                    memoizer.insert(key, count);
                     return count;
                 }
-                memoizer.insert(key, count + 1);
                 return count + 1;
             }
             _ => unreachable!(),
         }
     }
-    memoizer.insert(key, count);
     count
 }
 
