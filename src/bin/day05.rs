@@ -14,29 +14,52 @@
 
 use aoc_2023::time;
 use aoc_2023::{oops, oops::Oops};
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::io::{self, Read};
 use std::str::FromStr;
 
+#[derive(Debug, Eq, PartialEq)]
 struct Range {
-    dest: u64,
-    len: u64,
+    begin: u64,
+    // end is exclusive.
+    end: u64,
+}
+
+impl Ord for Range {
+    fn cmp(&self, rhs: &Self) -> Ordering {
+        self.begin
+            .cmp(&rhs.begin)
+            .then_with(|| self.end.cmp(&rhs.end))
+    }
+}
+
+impl PartialOrd for Range {
+    fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
+        Some(self.cmp(rhs))
+    }
 }
 
 struct Puzzle {
     seeds: Vec<u64>,
-    mappings: Vec<BTreeMap<u64, Range>>,
+    mappings: Vec<BTreeMap<Range, u64>>,
 }
 
-fn parse_mappings(s: &str) -> Result<BTreeMap<u64, Range>, Oops> {
+fn parse_mappings(s: &str) -> Result<BTreeMap<Range, u64>, Oops> {
     s.lines()
         .skip(1)
         .map(|line| {
             let mut nums = line.split_whitespace().map(str::parse::<u64>);
-            let dest = nums.next().expect("dest missing")?;
+            let dst = nums.next().expect("dst missing")?;
             let src = nums.next().expect("src missing")?;
             let len = nums.next().expect("len missing")?;
-            Ok((src, Range { dest, len }))
+            Ok((
+                Range {
+                    begin: src,
+                    end: src + len,
+                },
+                dst,
+            ))
         })
         .collect()
 }
@@ -63,10 +86,14 @@ impl FromStr for Puzzle {
     }
 }
 
-fn do_mapping(src: u64, m: &BTreeMap<u64, Range>) -> u64 {
-    if let Some((key, info)) = m.range(..=src).next_back() {
-        if src >= *key && src < *key + info.len {
-            (src - *key) + info.dest
+fn apply_mapping(src: u64, mapping: &BTreeMap<Range, u64>) -> u64 {
+    let src_range = Range {
+        begin: src,
+        end: u64::MAX,
+    };
+    if let Some((key, dst)) = mapping.range(..=src_range).next_back() {
+        if src < key.end {
+            (src - key.begin) + dst
         } else {
             src
         }
@@ -83,12 +110,7 @@ fn part1(puzzle: &Puzzle) -> u64 {
     puzzle
         .seeds
         .iter()
-        .map(|seed| {
-            puzzle
-                .mappings
-                .iter()
-                .fold(*seed, |val, mapping| do_mapping(val, mapping))
-        })
+        .map(|seed| puzzle.mappings.iter().fold(*seed, apply_mapping))
         .min()
         .expect("no seeds")
 }
@@ -99,12 +121,7 @@ fn part2(puzzle: &Puzzle) -> u64 {
         puzzle.seeds.iter().skip(1).step_by(2),
     )
     .flat_map(|(seed, range)| {
-        (0..*range).map(move |i| {
-            puzzle
-                .mappings
-                .iter()
-                .fold(seed + i, |val, mapping| do_mapping(val, mapping))
-        })
+        (0..*range).map(move |i| puzzle.mappings.iter().fold(seed + i, apply_mapping))
     })
     .min()
     .expect("no seeds")
