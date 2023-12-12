@@ -86,7 +86,7 @@ fn recursive_solve(
     memoizer: &mut HashMap<Memoize, u64>,
     unknowns: &[usize],
     record: &[usize],
-    spring: &mut [char],
+    spring: &str,
     matched_until: usize,
 ) -> u64 {
     let key = Memoize {
@@ -101,7 +101,10 @@ fn recursive_solve(
 
     if record.is_empty() {
         // There must be no further #s.
-        if spring[matched_until..].iter().any(|c| *c == '#') {
+        if spring.as_bytes()[matched_until..]
+            .iter()
+            .any(|c| *c == b'#')
+        {
             memoizer.insert(key, 0);
             return 0;
         } else {
@@ -114,24 +117,31 @@ fn recursive_solve(
     let min_remaining_size = record.iter().sum::<usize>() + (record.len() - 1);
     let mut count = 0;
     for i in matched_until..spring.len() - min_remaining_size + 1 {
-        if let Some('#') = spring[matched_until..i].iter().next_back() {
+        if let Some(b'#') = spring.as_bytes()[matched_until..i].iter().next_back() {
             memoizer.insert(key, count);
             return count;
         }
         // Try to find a position to slot the next group. A group can be slotted iff:
         // - the subsequence for the group contains only #s and ?s
         // - the element after the subsequence for the group is either EOL or '.' or '?'
-        if spring[i..i + next_group_size].iter().any(|c| *c == '.') {
+        if spring.as_bytes()[i..i + next_group_size]
+            .iter()
+            .any(|c| *c == b'.')
+        {
             continue;
         }
-        match spring.get(i + next_group_size) {
-            Some('#') => {
-                if spring[i..].iter().take(next_group_size).all(|c| *c == '#') {
+        match spring.as_bytes().get(i + next_group_size) {
+            Some(b'#') => {
+                if spring.as_bytes()[i..]
+                    .iter()
+                    .take(next_group_size)
+                    .all(|c| *c == b'#')
+                {
                     memoizer.insert(key, count);
                     return count;
                 }
             }
-            Some(&bch) if bch == '?' || bch == '.' => {
+            Some(&bch) if bch == b'?' || bch == b'.' => {
                 // First, tentatively consume any unknowns before this position.
                 let working = unknowns.iter().take_while(|idx| **idx < i).count();
 
@@ -141,7 +151,7 @@ fn recursive_solve(
                     .count();
 
                 // Finally, assign the boundary if needed.
-                let boundary = if bch == '?' { 1 } else { 0 };
+                let boundary = if bch == b'?' { 1 } else { 0 };
 
                 let newly_assigned = working + broken + boundary;
                 // Now recurse!
@@ -177,8 +187,7 @@ fn part1(puzzle: &Puzzle) -> u64 {
                 .filter_map(|(i, c)| if c == '?' { Some(i) } else { None })
                 .collect::<Vec<_>>();
             println!("trying {spring} with {record:?}");
-            let mut spring = Vec::from_iter(spring.chars());
-            recursive_solve(&mut HashMap::new(), &unknowns, record, &mut spring, 0)
+            recursive_solve(&mut HashMap::new(), &unknowns, record, &spring, 0)
         })
         .inspect(|val| println!("{val}"))
         .sum()
@@ -193,8 +202,7 @@ fn part2(puzzle: &Puzzle) -> u64 {
                 .filter_map(|(i, c)| if c == '?' { Some(i) } else { None })
                 .collect::<Vec<_>>();
             println!("trying {spring} with {record:?}");
-            let mut spring = Vec::from_iter(spring.chars());
-            recursive_solve(&mut HashMap::new(), &unknowns, record, &mut spring, 0)
+            recursive_solve(&mut HashMap::new(), &unknowns, record, &spring, 0)
         })
         .inspect(|val| println!("{val}"))
         .sum()
