@@ -141,7 +141,6 @@ fn recursive_solve(
                 while unknowns_assigned + working < unknowns.len()
                     && unknowns[unknowns_assigned + working] < i
                 {
-                    spring[unknowns[unknowns_assigned + working]] = '.';
                     working += 1;
                 }
 
@@ -150,14 +149,12 @@ fn recursive_solve(
                 while unknowns_assigned + working + broken < unknowns.len()
                     && unknowns[unknowns_assigned + working + broken] < i + next_group_size
                 {
-                    spring[unknowns[unknowns_assigned + working + broken]] = '#';
                     broken += 1;
                 }
 
                 // Finally, assign the boundary if needed.
                 let mut boundary = 0;
                 if bch == '?' {
-                    spring[i + next_group_size] = '.';
                     boundary = 1;
                 }
 
@@ -172,11 +169,6 @@ fn recursive_solve(
                     unknowns_assigned + newly_assigned,
                     records_matched + 1,
                 );
-
-                // And then undo the changes to the spring by resetting them to '?'.
-                for unk_idx in 0..newly_assigned {
-                    spring[unknowns[unknowns_assigned + unk_idx]] = '?';
-                }
             }
             None => {
                 if remaining_records > 1 {
