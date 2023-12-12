@@ -137,26 +137,18 @@ fn recursive_solve(
             }
             Some(&bch) if bch == '?' || bch == '.' => {
                 // First, tentatively consume any unknowns before this position.
-                let mut working = 0;
-                while unknowns_assigned + working < unknowns.len()
-                    && unknowns[unknowns_assigned + working] < i
-                {
-                    working += 1;
-                }
+                let working = unknowns[unknowns_assigned..]
+                    .iter()
+                    .take_while(|idx| **idx < i)
+                    .count();
 
-                // Now assign broken ones.
-                let mut broken = 0;
-                while unknowns_assigned + working + broken < unknowns.len()
-                    && unknowns[unknowns_assigned + working + broken] < i + next_group_size
-                {
-                    broken += 1;
-                }
+                let broken = unknowns[unknowns_assigned + working..]
+                    .iter()
+                    .take_while(|idx| **idx < i + next_group_size)
+                    .count();
 
                 // Finally, assign the boundary if needed.
-                let mut boundary = 0;
-                if bch == '?' {
-                    boundary = 1;
-                }
+                let boundary = if bch == '?' { 1 } else { 0 };
 
                 let newly_assigned = working + broken + boundary;
                 // Now recurse!
