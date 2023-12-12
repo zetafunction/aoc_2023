@@ -65,7 +65,7 @@ impl FromStr for Puzzle {
             .iter()
             .map(|spring: &String| {
                 let spring: &str = spring;
-                [spring, spring, spring, spring, spring].join("?")
+                [spring; 5].join("?")
             })
             .collect();
 
