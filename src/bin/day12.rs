@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use aoc_2023::oops::Oops;
 use aoc_2023::time;
-use aoc_2023::{oops, oops::Oops};
 use std::collections::HashMap;
 use std::io::{self, Read};
 use std::str::FromStr;
@@ -21,59 +21,59 @@ use std::str::FromStr;
 #[derive(Eq, Hash, PartialEq)]
 struct Key {
     unknowns_left: usize,
-    record_left: usize,
-    matched_until: usize,
+    records_left: usize,
+    springs_matched: usize,
 }
 
 #[derive(Debug)]
 struct Puzzle {
-    records: Vec<Vec<usize>>,
-    springs: Vec<String>,
-    records5: Vec<Vec<usize>>,
-    springs5: Vec<String>,
+    recordses: Vec<Vec<usize>>,
+    springses: Vec<String>,
+    recordses5: Vec<Vec<usize>>,
+    springses5: Vec<String>,
 }
 
 impl FromStr for Puzzle {
     type Err = Oops;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (springs, records) = s
+        let (springses, recordses) = s
             .lines()
             .map(|line| {
-                let (spring, record) = line.split_once(' ').unwrap();
+                let (springs, records) = line.split_once(' ').unwrap();
                 (
-                    spring.to_string(),
-                    record
-                        .split(",")
+                    springs.to_string(),
+                    records
+                        .split(',')
                         .map(|val| val.parse().unwrap())
                         .collect::<Vec<usize>>(),
                 )
             })
             .unzip::<String, Vec<_>, Vec<_>, Vec<_>>();
-        let records5 = records
+        let recordses5 = recordses
             .iter()
-            .map(|record| {
-                record
+            .map(|records| {
+                records
                     .iter()
-                    .cloned()
+                    .copied()
                     .cycle()
-                    .take(record.len() * 5)
+                    .take(records.len() * 5)
                     .collect()
             })
             .collect();
-        let springs5 = springs
+        let springses5 = springses
             .iter()
-            .map(|spring: &String| {
-                let spring: &str = spring;
-                [spring; 5].join("?")
+            .map(|springs: &String| {
+                let springs: &str = springs;
+                [springs; 5].join("?")
             })
             .collect();
 
         Ok(Puzzle {
-            records,
-            springs,
-            records5,
-            springs5,
+            recordses,
+            springses,
+            recordses5,
+            springses5,
         })
     }
 }
@@ -85,41 +85,42 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
 fn recursive_solve(
     memoizer: &mut HashMap<Key, u64>,
     unknowns: &[usize],
-    record: &[usize],
-    spring: &str,
-    matched_until: usize,
+    records: &[usize],
+    springs: &str,
+    springs_matched: usize,
 ) -> u64 {
-    if record.is_empty() {
-        // There must be no further #s.
-        if spring.as_bytes()[matched_until..]
+    if records.is_empty() {
+        // If there are any more broken springs, this subsequence cannot match.
+        if springs.as_bytes()[springs_matched..]
             .iter()
             .any(|c| *c == b'#')
         {
             return 0;
-        } else {
-            return 1;
         }
+        return 1;
     }
 
-    let next_group_size = record[0];
-    let min_remaining_size = record.iter().sum::<usize>() + (record.len() - 1);
+    let next_group_size = records[0];
+    let min_remaining_size = records.iter().sum::<usize>() + (records.len() - 1);
     let mut count = 0;
-    for i in matched_until..spring.len() - min_remaining_size + 1 {
-        if let Some(b'#') = spring.as_bytes()[matched_until..i].iter().next_back() {
+    for i in springs_matched..=springs.len() - min_remaining_size {
+        if let Some(b'#') = springs.as_bytes()[springs_matched..i].iter().next_back() {
             return count;
         }
         // Try to find a position to slot the next group. A group can be slotted iff:
         // - the subsequence for the group contains only #s and ?s
         // - the element after the subsequence for the group is either EOL or '.' or '?'
-        if spring.as_bytes()[i..i + next_group_size]
+        if springs.as_bytes()[i..i + next_group_size]
             .iter()
             .any(|c| *c == b'.')
         {
             continue;
         }
-        match spring.as_bytes().get(i + next_group_size) {
+        match springs.as_bytes().get(i + next_group_size) {
             Some(b'#') => {
-                if spring.as_bytes()[i..]
+                // This is a group of next_group_size + 1 broken springs, so it cannot possibly be
+                // a group of next_group_size broken springs.
+                if springs.as_bytes()[i..]
                     .iter()
                     .take(next_group_size)
                     .all(|c| *c == b'#')
@@ -128,7 +129,7 @@ fn recursive_solve(
                 }
             }
             Some(&bch) if bch == b'?' || bch == b'.' => {
-                // First, tentatively consume any unknowns before this position.
+                // First, consume unknowns as working springs before this candidate position..
                 let working = unknowns.iter().take_while(|idx| **idx < i).count();
 
                 let broken = unknowns[working..]
@@ -137,17 +138,17 @@ fn recursive_solve(
                     .count();
 
                 // Finally, assign the boundary if needed.
-                let boundary = if bch == b'?' { 1 } else { 0 };
+                let boundary = usize::from(bch == b'?');
 
                 let newly_assigned = working + broken + boundary;
                 let remaining_unknowns = &unknowns[newly_assigned..];
-                let remaining_record = &record[1..];
-                let matched_until = i + next_group_size + 1;
+                let remaining_records = &records[1..];
+                let springs_matched = i + next_group_size + 1;
 
                 let key = Key {
                     unknowns_left: remaining_unknowns.len(),
-                    record_left: remaining_record.len(),
-                    matched_until,
+                    records_left: remaining_records.len(),
+                    springs_matched,
                 };
 
                 if let Some(v) = memoizer.get(&key) {
@@ -156,16 +157,16 @@ fn recursive_solve(
                     let v = recursive_solve(
                         memoizer,
                         remaining_unknowns,
-                        remaining_record,
-                        spring,
-                        matched_until,
+                        remaining_records,
+                        springs,
+                        springs_matched,
                     );
                     count += v;
                     memoizer.insert(key, v);
                 }
             }
             None => {
-                if record.len() > 1 {
+                if records.len() > 1 {
                     return count;
                 }
                 return count + 1;
@@ -177,30 +178,30 @@ fn recursive_solve(
 }
 
 fn part1(puzzle: &Puzzle) -> u64 {
-    std::iter::zip(puzzle.records.iter(), puzzle.springs.iter())
-        .map(|(record, spring)| {
-            let unknowns = spring
+    std::iter::zip(puzzle.recordses.iter(), puzzle.springses.iter())
+        .map(|(records, springs)| {
+            let unknowns = springs
                 .chars()
                 .enumerate()
                 .filter_map(|(i, c)| if c == '?' { Some(i) } else { None })
                 .collect::<Vec<_>>();
-            println!("trying {spring} with {record:?}");
-            recursive_solve(&mut HashMap::new(), &unknowns, record, &spring, 0)
+            println!("trying {springs} with {records:?}");
+            recursive_solve(&mut HashMap::new(), &unknowns, records, springs, 0)
         })
         .inspect(|val| println!("{val}"))
         .sum()
 }
 
 fn part2(puzzle: &Puzzle) -> u64 {
-    std::iter::zip(puzzle.records5.iter(), puzzle.springs5.iter())
-        .map(|(record, spring)| {
-            let unknowns = spring
+    std::iter::zip(puzzle.recordses5.iter(), puzzle.springses5.iter())
+        .map(|(records, springs)| {
+            let unknowns = springs
                 .chars()
                 .enumerate()
                 .filter_map(|(i, c)| if c == '?' { Some(i) } else { None })
                 .collect::<Vec<_>>();
-            println!("trying {spring} with {record:?}");
-            recursive_solve(&mut HashMap::new(), &unknowns, record, &spring, 0)
+            println!("trying {springs} with {records:?}");
+            recursive_solve(&mut HashMap::new(), &unknowns, records, springs, 0)
         })
         .inspect(|val| println!("{val}"))
         .sum()
