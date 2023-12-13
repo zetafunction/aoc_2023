@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use aoc_2023::geometry::{Bounds2, Point2};
 use aoc_2023::time;
 use aoc_2023::{oops, oops::Oops};
-use std::collections::HashSet;
 use std::io::{self, Read};
 use std::str::FromStr;
 
@@ -60,45 +58,38 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
 }
 
 fn reflects(valley: &[String]) -> Option<usize> {
-    for i in 1..valley.len() {
-        if (0..i).all(|j| match (valley.get(i - j - 1), valley.get(i + j)) {
+    (1..valley.len()).find(|i| {
+        (0..*i).all(|j| match (valley.get(i - j - 1), valley.get(i + j)) {
             (Some(x), Some(y)) if x == y => true,
-            (Some(_), None) | (None, Some(_)) => true,
-            (None, None) => true,
+            (Some(_), None) | (None, Some(_)) | (None, None) => true,
             (Some(_), Some(_)) => false,
-        }) {
-            return Some(i);
-        }
-    }
-    return None;
+        })
+    })
 }
 
 fn almost_reflects(valley: &[String]) -> Option<usize> {
-    for i in 1..valley.len() {
-        let Ok(Some(almost_pair)) = (0..i).try_fold(None, |almost_pair, j| {
-            match (valley.get(i - j - 1), valley.get(i + j)) {
-                (Some(x), Some(y)) if x == y => Ok(almost_pair),
-                (Some(_), None) | (None, Some(_)) => Ok(almost_pair),
-                (None, None) => Ok(almost_pair),
-                (Some(x), Some(y)) => {
-                    if std::iter::zip(x.chars(), y.chars())
-                        .filter(|(x, y)| x != y)
-                        .count()
-                        == 1
-                        && almost_pair.is_none()
-                    {
-                        Ok(Some(x))
-                    } else {
-                        Err(oops!("sob"))
+    (1..valley.len()).find(|i| {
+        (0..*i)
+            .try_fold(false, |found_almost_pair, j| {
+                match (valley.get(i - j - 1), valley.get(i + j)) {
+                    (Some(x), Some(y)) if x == y => Ok(found_almost_pair),
+                    (Some(_), None) | (None, Some(_)) | (None, None) => Ok(found_almost_pair),
+                    (Some(x), Some(y)) => {
+                        if std::iter::zip(x.chars(), y.chars())
+                            .filter(|(x, y)| x != y)
+                            .count()
+                            == 1
+                            && !found_almost_pair
+                        {
+                            Ok(true)
+                        } else {
+                            Err(oops!("not this one"))
+                        }
                     }
                 }
-            }
-        }) else {
-            continue;
-        };
-        return Some(i);
-    }
-    return None;
+            })
+            .unwrap_or(false)
+    })
 }
 
 fn part1(puzzle: &Puzzle) -> usize {
