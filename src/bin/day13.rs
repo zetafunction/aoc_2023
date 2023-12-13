@@ -75,11 +75,11 @@ fn almost_reflects(valley: &[String]) -> Option<usize> {
                     (Some(x), Some(y)) if x == y => Ok(found_almost_pair),
                     (Some(_), None) | (None, Some(_)) | (None, None) => Ok(found_almost_pair),
                     (Some(x), Some(y)) => {
-                        if std::iter::zip(x.chars(), y.chars())
-                            .filter(|(x, y)| x != y)
-                            .count()
-                            == 1
-                            && !found_almost_pair
+                        if !found_almost_pair
+                            && std::iter::zip(x.chars(), y.chars())
+                                .filter(|(x, y)| x != y)
+                                .count()
+                                == 1
                         {
                             Ok(true)
                         } else {
@@ -93,31 +93,37 @@ fn almost_reflects(valley: &[String]) -> Option<usize> {
 }
 
 fn part1(puzzle: &Puzzle) -> usize {
-    let mut count = 0;
-    for i in 0..puzzle.horizontal_valleys.len() {
-        if let Some(rows) = reflects(&puzzle.horizontal_valleys[i]) {
-            count += rows * 100;
-        } else if let Some(cols) = reflects(&puzzle.vertical_valleys[i]) {
-            count += cols;
+    std::iter::zip(
+        puzzle.horizontal_valleys.iter(),
+        puzzle.vertical_valleys.iter(),
+    )
+    .map(|(horizontal, vertical)| {
+        if let Some(rows) = reflects(horizontal) {
+            rows * 100
+        } else if let Some(cols) = reflects(vertical) {
+            cols
         } else {
             unreachable!();
         }
-    }
-    count
+    })
+    .sum()
 }
 
 fn part2(puzzle: &Puzzle) -> usize {
-    let mut count = 0;
-    for i in 0..puzzle.horizontal_valleys.len() {
-        if let Some(rows) = almost_reflects(&puzzle.horizontal_valleys[i]) {
-            count += rows * 100;
-        } else if let Some(cols) = almost_reflects(&puzzle.vertical_valleys[i]) {
-            count += cols;
+    std::iter::zip(
+        puzzle.horizontal_valleys.iter(),
+        puzzle.vertical_valleys.iter(),
+    )
+    .map(|(horizontal, vertical)| {
+        if let Some(rows) = almost_reflects(horizontal) {
+            rows * 100
+        } else if let Some(cols) = almost_reflects(vertical) {
+            cols
         } else {
             unreachable!();
         }
-    }
-    count
+    })
+    .sum()
 }
 
 fn main() -> Result<(), Oops> {
