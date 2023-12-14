@@ -201,6 +201,7 @@ fn part2(puzzle: &Puzzle) -> usize {
                     .all(|i| scores_seen[iteration - i] == scores_seen[iteration - cycle_len - i])
                 {
                     // Fast forward.
+                    iteration += 1;
                     let remaining = 1_000_000_000 - iteration;
                     iteration += (remaining / cycle_len) * cycle_len;
                     break 'cycle_finder;
