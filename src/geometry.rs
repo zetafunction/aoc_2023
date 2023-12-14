@@ -28,26 +28,6 @@ impl Point2 {
     }
 
     #[must_use]
-    pub fn north(&self) -> Self {
-        Point2::new(self.x, self.y - 1)
-    }
-
-    #[must_use]
-    pub fn east(&self) -> Self {
-        Point2::new(self.x + 1, self.y)
-    }
-
-    #[must_use]
-    pub fn south(&self) -> Self {
-        Point2::new(self.x, self.y + 1)
-    }
-
-    #[must_use]
-    pub fn west(&self) -> Self {
-        Point2::new(self.x - 1, self.y)
-    }
-
-    #[must_use]
     pub fn all_neighbors(&self) -> Neighbors2 {
         const NEIGHBOR_VECTORS: [Vector2; 8] = [
             Vector2::new(-1, 0),

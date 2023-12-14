@@ -19,106 +19,174 @@ use std::collections::{HashMap, HashSet};
 use std::io::{self, Read};
 use std::str::FromStr;
 
-const NORTH: u8 = 1 << 1;
-const EAST: u8 = 1 << 2;
-const SOUTH: u8 = 1 << 3;
-const WEST: u8 = 1 << 4;
+#[derive(Clone, Copy, Debug)]
+enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
 
-#[derive(Clone, Copy, Debug, Default)]
-struct Cell {
-    // Bitmask of NORTH/EAST/SOUTH/WEST values.
-    connections: u8,
-    start: bool,
+const ALL_DIRECTIONS: [Direction; 4] = [
+    Direction::North,
+    Direction::East,
+    Direction::South,
+    Direction::West,
+];
+
+trait PointHelpers {
+    #[must_use]
+    fn north(&self) -> Self;
+    #[must_use]
+    fn east(&self) -> Self;
+    #[must_use]
+    fn south(&self) -> Self;
+    #[must_use]
+    fn west(&self) -> Self;
+    #[must_use]
+    fn in_direction(&self, direction: Direction) -> Self;
+}
+
+impl PointHelpers for Point2 {
+    fn north(&self) -> Self {
+        Point2::new(self.x, self.y - 1)
+    }
+
+    fn east(&self) -> Self {
+        Point2::new(self.x + 1, self.y)
+    }
+
+    fn south(&self) -> Self {
+        Point2::new(self.x, self.y + 1)
+    }
+
+    fn west(&self) -> Self {
+        Point2::new(self.x - 1, self.y)
+    }
+
+    fn in_direction(&self, direction: Direction) -> Point2 {
+        match direction {
+            Direction::North => self.north(),
+            Direction::East => self.east(),
+            Direction::South => self.south(),
+            Direction::West => self.west(),
+        }
+    }
+}
+
+impl Direction {
+    fn opposite(self) -> Self {
+        match self {
+            Self::North => Self::South,
+            Self::East => Self::West,
+            Self::South => Self::North,
+            Self::West => Self::East,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum Pipe {
+    Vertical,
+    Horizontal,
+    CornerL,
+    CornerJ,
+    Corner7,
+    CornerF,
+}
+
+impl Pipe {
+    fn has_exit(self, direction: Direction) -> bool {
+        matches!(
+            (direction, self),
+            (
+                Direction::North,
+                Self::Vertical | Self::CornerL | Self::CornerJ
+            ) | (
+                Direction::East,
+                Self::Horizontal | Self::CornerL | Self::CornerF
+            ) | (
+                Direction::South,
+                Self::Vertical | Self::Corner7 | Self::CornerF
+            ) | (
+                Direction::West,
+                Self::Horizontal | Self::CornerJ | Self::Corner7
+            )
+        )
+    }
 }
 
 struct Puzzle {
     start: Point2,
-    cells: HashMap<Point2, Cell>,
-}
-
-// TODO: Find a better solution when needed to use str::parse with a char.
-impl Cell {
-    fn from_char(c: char) -> Result<Self, Oops> {
-        Ok(match c {
-            '|' => Cell {
-                connections: NORTH | SOUTH,
-                ..Default::default()
-            },
-            '-' => Cell {
-                connections: EAST | WEST,
-                ..Default::default()
-            },
-            'L' => Cell {
-                connections: NORTH | EAST,
-                ..Default::default()
-            },
-            'J' => Cell {
-                connections: NORTH | WEST,
-                ..Default::default()
-            },
-            '7' => Cell {
-                connections: SOUTH | WEST,
-                ..Default::default()
-            },
-            'F' => Cell {
-                connections: SOUTH | EAST,
-                ..Default::default()
-            },
-            '.' => Cell::default(),
-            'S' => Cell {
-                start: true,
-                ..Default::default()
-            },
-            _ => return Err(oops!("invalid char")),
-        })
-    }
+    cells: HashMap<Point2, Pipe>,
 }
 
 impl FromStr for Puzzle {
     type Err = Oops;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (mut cells, start) =
-            (0i32..)
-                .zip(s.lines())
-                .fold((HashMap::new(), None), |(cells, start), (y, line)| {
-                    (0i32..).zip(line.chars()).fold(
-                        (cells, start),
-                        |(mut cells, mut start), (x, c)| {
-                            let cell = Cell::from_char(c).unwrap();
-                            if cell.start {
-                                start = Some(Point2::new(x, y));
+        let (mut cells, start) = (0i32..).zip(s.lines()).try_fold(
+            (HashMap::new(), None),
+            |(cells, start), (y, line)| {
+                (0i32..)
+                    .zip(line.chars())
+                    .try_fold((cells, start), |(mut cells, start), (x, c)| {
+                        let pipe = match c {
+                            '|' => Pipe::Vertical,
+                            '-' => Pipe::Horizontal,
+                            'L' => Pipe::CornerL,
+                            'J' => Pipe::CornerJ,
+                            '7' => Pipe::Corner7,
+                            'F' => Pipe::CornerF,
+                            'S' => {
+                                return if start.is_none() {
+                                    Ok((cells, Some(Point2::new(x, y))))
+                                } else {
+                                    return Err(oops!("multiple starts"));
+                                }
                             }
-                            cells.insert(Point2::new(x, y), cell);
-                            (cells, start)
-                        },
-                    )
-                });
-        let Some(start) = start else {
-            return Err(oops!("no start"));
-        };
-        let mut start_connections = 0;
-        if let Some(cell) = cells.get(&start.north()) {
-            if cell.connections & SOUTH != 0 {
-                start_connections |= NORTH;
-            }
+                            '.' => return Ok((cells, start)),
+                            _ => return Err(oops!("invalid character")),
+                        };
+                        cells.insert(Point2::new(x, y), pipe);
+                        Ok((cells, start))
+                    })
+            },
+        )?;
+        let start = start.ok_or_else(|| oops!("no start"))?;
+
+        let start_directions = ALL_DIRECTIONS
+            .into_iter()
+            .filter(|direction| {
+                if let Some(neighbor) = cells.get(&start.in_direction(*direction)) {
+                    neighbor.has_exit(direction.opposite())
+                } else {
+                    false
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if start_directions.len() != 2 {
+            return Err(oops!(
+                "expected 2 connections to start, got {}",
+                start_directions.len()
+            ));
         }
-        if let Some(cell) = cells.get(&start.east()) {
-            if cell.connections & WEST != 0 {
-                start_connections |= EAST;
-            }
-        }
-        if let Some(cell) = cells.get(&start.south()) {
-            if cell.connections & NORTH != 0 {
-                start_connections |= SOUTH;
-            }
-        }
-        if let Some(cell) = cells.get(&start.west()) {
-            if cell.connections & EAST != 0 {
-                start_connections |= WEST;
-            }
-        }
-        cells.get_mut(&start).unwrap().connections = start_connections;
+
+        // Note that the directions in the match will be in the same order as ALL_DIRECTIONS.
+        cells.insert(
+            start,
+            match start_directions[0..2] {
+                [Direction::North, Direction::South] => Pipe::Vertical,
+                [Direction::East, Direction::West] => Pipe::Horizontal,
+                [Direction::North, Direction::East] => Pipe::CornerL,
+                [Direction::North, Direction::West] => Pipe::CornerJ,
+                [Direction::South, Direction::West] => Pipe::Corner7,
+                [Direction::East, Direction::South] => Pipe::CornerF,
+                _ => unreachable!(),
+            },
+        );
+
         Ok(Puzzle { start, cells })
     }
 }
@@ -133,50 +201,27 @@ fn solve(puzzle: &Puzzle) -> (u64, HashSet<Point2>) {
     let mut currents = vec![puzzle.start, puzzle.start];
     visited.insert(puzzle.start);
     loop {
-        let mut nexts = vec![];
-        for current in &currents {
-            let current_cell = puzzle.cells.get(current).unwrap();
-            let candidate = current.north();
-            if current_cell.connections & NORTH != 0 && !visited.contains(&candidate) {
-                if let Some(cell) = puzzle.cells.get(&candidate) {
-                    if cell.connections & SOUTH != 0 {
-                        nexts.push(candidate);
+        let nexts = currents
+            .iter()
+            .filter_map(|current| {
+                let pipe = puzzle.cells.get(current).expect("traversed to empty cell");
+                ALL_DIRECTIONS.into_iter().find_map(|direction| {
+                    let candidate = current.in_direction(direction);
+                    let Some(candidate_pipe) = puzzle.cells.get(&candidate) else {
+                        return None;
+                    };
+                    if pipe.has_exit(direction)
+                        && candidate_pipe.has_exit(direction.opposite())
+                        && !visited.contains(&candidate)
+                    {
                         visited.insert(candidate);
-                        continue;
+                        Some(candidate)
+                    } else {
+                        None
                     }
-                }
-            }
-            let candidate = current.east();
-            if current_cell.connections & EAST != 0 && !visited.contains(&candidate) {
-                if let Some(cell) = puzzle.cells.get(&candidate) {
-                    if cell.connections & WEST != 0 {
-                        nexts.push(candidate);
-                        visited.insert(candidate);
-                        continue;
-                    }
-                }
-            }
-            let candidate = current.south();
-            if current_cell.connections & SOUTH != 0 && !visited.contains(&candidate) {
-                if let Some(cell) = puzzle.cells.get(&candidate) {
-                    if cell.connections & NORTH != 0 {
-                        nexts.push(candidate);
-                        visited.insert(candidate);
-                        continue;
-                    }
-                }
-            }
-            let candidate = current.west();
-            if current_cell.connections & WEST != 0 && !visited.contains(&candidate) {
-                if let Some(cell) = puzzle.cells.get(&candidate) {
-                    if cell.connections & EAST != 0 {
-                        nexts.push(candidate);
-                        visited.insert(candidate);
-                        continue;
-                    }
-                }
-            }
-        }
+                })
+            })
+            .collect::<Vec<_>>();
         if nexts.len() < 2 {
             return (steps + 1, visited);
         }
@@ -195,27 +240,31 @@ fn part2(puzzle: &Puzzle) -> u64 {
     let mut count = 0;
     for y in bounds.min.y..=bounds.max.y {
         let mut in_loop = false;
-        let mut last_dir = None;
+        let mut last_direction = None;
         for x in bounds.min.x..=bounds.max.x {
             let current = Point2::new(x, y);
-            let current_cell = puzzle.cells.get(&current).unwrap();
             if visited.contains(&current) {
-                if current_cell.connections & (NORTH | SOUTH) != 0 {
-                    if current_cell.connections == NORTH | SOUTH {
+                let pipe = puzzle.cells.get(&current).unwrap();
+                if pipe.has_exit(Direction::North) || pipe.has_exit(Direction::South) {
+                    if *pipe == Pipe::Vertical {
                         in_loop = !in_loop;
-                        last_dir = None;
-                    } else {
-                        match last_dir {
-                            None => {
+                        last_direction = None;
+                        continue;
+                    }
+                    match last_direction {
+                        None => {
+                            in_loop = !in_loop;
+                            last_direction = Some(if pipe.has_exit(Direction::North) {
+                                Direction::North
+                            } else {
+                                Direction::South
+                            });
+                        }
+                        Some(direction) => {
+                            if pipe.has_exit(direction) {
                                 in_loop = !in_loop;
-                                last_dir = Some(current_cell.connections & (NORTH | SOUTH));
                             }
-                            Some(dir) => {
-                                if dir & current_cell.connections != 0 {
-                                    in_loop = !in_loop;
-                                }
-                                last_dir = None;
-                            }
+                            last_direction = None;
                         }
                     }
                 }
