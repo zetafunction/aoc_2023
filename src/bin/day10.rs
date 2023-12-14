@@ -234,48 +234,47 @@ fn part1(puzzle: &Puzzle) -> u64 {
     solve(puzzle).0
 }
 
-fn part2(puzzle: &Puzzle) -> u64 {
+fn part2(puzzle: &Puzzle) -> usize {
     let (_, visited) = solve(puzzle);
     let bounds = Bounds2::from_points(visited.iter());
-    let mut count = 0;
-    for y in bounds.min.y..=bounds.max.y {
-        let mut in_loop = false;
-        let mut last_direction = None;
-        for x in bounds.min.x..=bounds.max.x {
-            let current = Point2::new(x, y);
-            if visited.contains(&current) {
-                let pipe = puzzle.cells.get(&current).unwrap();
-                if pipe.has_exit(Direction::North) || pipe.has_exit(Direction::South) {
-                    if *pipe == Pipe::Vertical {
-                        in_loop = !in_loop;
-                        last_direction = None;
-                        continue;
-                    }
-                    match last_direction {
-                        None => {
+    (bounds.min.y..=bounds.max.y)
+        .flat_map(|y| {
+            let mut in_loop = false;
+            let mut last_direction = None;
+            let visited = &visited;
+            (bounds.min.x..=bounds.max.x).filter(move |x| {
+                let current = Point2::new(*x, y);
+                if visited.contains(&current) {
+                    let pipe = puzzle.cells.get(&current).unwrap();
+                    if pipe.has_exit(Direction::North) || pipe.has_exit(Direction::South) {
+                        if *pipe == Pipe::Vertical {
                             in_loop = !in_loop;
-                            last_direction = Some(if pipe.has_exit(Direction::North) {
-                                Direction::North
-                            } else {
-                                Direction::South
-                            });
-                        }
-                        Some(direction) => {
-                            if pipe.has_exit(direction) {
-                                in_loop = !in_loop;
-                            }
                             last_direction = None;
+                            return false;
+                        }
+                        match last_direction {
+                            None => {
+                                in_loop = !in_loop;
+                                last_direction = Some(if pipe.has_exit(Direction::North) {
+                                    Direction::North
+                                } else {
+                                    Direction::South
+                                });
+                            }
+                            Some(direction) => {
+                                if pipe.has_exit(direction) {
+                                    in_loop = !in_loop;
+                                }
+                                last_direction = None;
+                            }
                         }
                     }
+                    return false;
                 }
-                continue;
-            }
-            if in_loop {
-                count += 1;
-            }
-        }
-    }
-    count
+                in_loop
+            })
+        })
+        .count()
 }
 
 fn main() -> Result<(), Oops> {
