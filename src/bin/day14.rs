@@ -15,11 +15,13 @@
 use aoc_2023::matrix::Matrix;
 use aoc_2023::time;
 use aoc_2023::{oops, oops::Oops};
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::io::{self, Read};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 enum Cell {
     Round = 0,
     Cube = 1,
@@ -169,49 +171,40 @@ fn part1(puzzle: &Puzzle) -> usize {
 fn part2(puzzle: &Puzzle) -> usize {
     let mut puzzle = puzzle.clone();
     let mut iteration = 0;
-    let mut scores_seen_map = HashMap::<usize, Vec<usize>>::new();
-    let mut scores_seen = vec![];
-
-    while iteration < 1_000 {
-        puzzle.tilt_north();
-        puzzle.tilt_west();
-        puzzle.tilt_south();
-        puzzle.tilt_east();
-        let score = calculate(&puzzle);
-        scores_seen.push(score);
-        scores_seen_map
-            .entry(score)
-            .and_modify(|seen| seen.push(iteration))
-            .or_insert_with(|| vec![iteration]);
-        iteration += 1;
-    }
+    let mut states_seen_map = HashMap::<u64, Vec<usize>>::new();
+    let mut states_seen = vec![];
 
     'cycle_finder: while iteration < 1_000_000_000 {
         puzzle.tilt_north();
         puzzle.tilt_west();
         puzzle.tilt_south();
         puzzle.tilt_east();
-        let score = calculate(&puzzle);
-        scores_seen.push(score);
-        if let Some(previous_its) = scores_seen_map.get_mut(&score) {
+
+        let mut hasher = DefaultHasher::new();
+        puzzle.platform.hash(&mut hasher);
+        let state = hasher.finish();
+        states_seen.push(state);
+        let previouses = states_seen_map.entry(state).or_insert_with(|| vec![]);
+
+        if !previouses.is_empty() {
             // If not a cycle, just append and continue.
-            for previous_it in &*previous_its {
-                let cycle_len = iteration - *previous_it;
-                if (1..cycle_len)
-                    .all(|i| scores_seen[iteration - i] == scores_seen[iteration - cycle_len - i])
-                {
+            for previous in &*previouses {
+                let potential_cycle_len = iteration - *previous;
+                if (1..potential_cycle_len).all(|i| {
+                    states_seen[iteration - i] == states_seen[iteration - potential_cycle_len - i]
+                }) {
                     // Fast forward.
                     iteration += 1;
                     let remaining = 1_000_000_000 - iteration;
-                    iteration += (remaining / cycle_len) * cycle_len;
+                    iteration += (remaining / potential_cycle_len) * potential_cycle_len;
                     break 'cycle_finder;
                 }
             }
             // Not a cycle, just continue.
-            previous_its.push(iteration);
+            previouses.push(iteration);
             iteration += 1;
         } else {
-            scores_seen_map.insert(score, vec![iteration]);
+            previouses.push(iteration);
             iteration += 1;
         }
     }

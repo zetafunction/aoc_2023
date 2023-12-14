@@ -12,11 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::hash::{Hash, Hasher};
+
 #[derive(Clone, Debug)]
 pub struct Matrix<T> {
     data: Vec<T>,
     width: usize,
     height: usize,
+}
+
+impl<T> Hash for Matrix<T>
+where
+    T: Hash,
+{
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        // For now, we only store data in row-major order, so meh.
+        self.data.hash(state);
+    }
 }
 
 impl<T: Copy> Matrix<T> {
@@ -65,6 +80,8 @@ impl<T: Copy> Matrix<T> {
             y,
         }
     }
+
+    // TODO: Implement rotate and transposition.
 }
 
 pub struct Col<'a, T> {
