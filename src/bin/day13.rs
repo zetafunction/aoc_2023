@@ -97,15 +97,13 @@ fn part1(puzzle: &Puzzle) -> usize {
         puzzle.horizontal_valleys.iter(),
         puzzle.vertical_valleys.iter(),
     )
-    .map(|(horizontal, vertical)| {
-        if let Some(rows) = reflects(horizontal) {
-            rows * 100
-        } else if let Some(cols) = reflects(vertical) {
-            cols
-        } else {
-            unreachable!();
-        }
-    })
+    .map(
+        |(horizontal, vertical)| match (reflects(horizontal), reflects(vertical)) {
+            (Some(rows), None) => rows * 100,
+            (None, Some(cols)) => cols,
+            _ => unreachable!(),
+        },
+    )
     .sum()
 }
 
@@ -114,15 +112,13 @@ fn part2(puzzle: &Puzzle) -> usize {
         puzzle.horizontal_valleys.iter(),
         puzzle.vertical_valleys.iter(),
     )
-    .map(|(horizontal, vertical)| {
-        if let Some(rows) = almost_reflects(horizontal) {
-            rows * 100
-        } else if let Some(cols) = almost_reflects(vertical) {
-            cols
-        } else {
-            unreachable!();
-        }
-    })
+    .map(
+        |(horizontal, vertical)| match (almost_reflects(horizontal), almost_reflects(vertical)) {
+            (Some(rows), None) => rows * 100,
+            (None, Some(cols)) => cols,
+            _ => unreachable!(),
+        },
+    )
     .sum()
 }
 
