@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use aoc_2023::matrix::Matrix;
 use aoc_2023::time;
 use aoc_2023::{oops, oops::Oops};
 use std::collections::HashMap;
@@ -25,35 +26,36 @@ enum Cell {
     Nothing = 2,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Puzzle {
-    cells: Vec<Vec<Cell>>,
-    rows: usize,
-    cols: usize,
+    platform: Matrix<Cell>,
 }
 
 impl FromStr for Puzzle {
     type Err = Oops;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let cells = s
-            .lines()
-            .map(|line| {
-                line.chars()
-                    .map(|c| match c {
+        let rows = s.lines().count();
+        let cols = s.lines().next().ok_or_else(|| oops!("no lines!"))?.len();
+
+        let mut platform = Matrix::new(cols, rows, Cell::Nothing);
+
+        for (y, line) in s.lines().enumerate() {
+            for (x, c) in line.chars().enumerate() {
+                platform.set(
+                    x,
+                    y,
+                    match c {
                         'O' => Cell::Round,
                         '#' => Cell::Cube,
-                        '.' => Cell::Nothing,
+                        '.' => continue,
                         _ => unreachable!(),
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
+                    },
+                )
+            }
+        }
 
-        let rows = cells.len();
-        let cols = cells[0].len();
-
-        Ok(Puzzle { cells, rows, cols })
+        Ok(Puzzle { platform })
     }
 }
 
@@ -61,129 +63,121 @@ fn parse(input: &str) -> Result<Puzzle, Oops> {
     input.parse()
 }
 
-fn tilt_north(puzzle: &Puzzle, cells: &mut [Vec<Cell>]) {
-    for x in 0..puzzle.cols {
-        let mut next_write = 0;
-        for y in 0..puzzle.rows {
-            match cells[y][x] {
-                Cell::Nothing => {
-                    continue;
+impl Puzzle {
+    fn tilt_north(&mut self) {
+        for x in 0..self.platform.width() {
+            let mut next_write = 0;
+            for y in 0..self.platform.height() {
+                match self.platform.get(x, y) {
+                    Cell::Nothing => {
+                        continue;
+                    }
+                    Cell::Cube => {
+                        next_write = y + 1;
+                        continue;
+                    }
+                    Cell::Round => {
+                        self.platform.swap(x, y, x, next_write);
+                        next_write += 1;
+                    }
                 }
-                Cell::Cube => {
-                    next_write = y + 1;
-                    continue;
+            }
+        }
+    }
+
+    fn tilt_west(&mut self) {
+        for y in 0..self.platform.height() {
+            let mut next_write = 0;
+            for x in 0..self.platform.width() {
+                match self.platform.get(x, y) {
+                    Cell::Nothing => {
+                        continue;
+                    }
+                    Cell::Cube => {
+                        next_write = x + 1;
+                        continue;
+                    }
+                    Cell::Round => {
+                        self.platform.swap(x, y, next_write, y);
+                        next_write += 1;
+                    }
                 }
-                Cell::Round => {
-                    let temp = cells[next_write][x];
-                    cells[next_write][x] = cells[y][x];
-                    cells[y][x] = temp;
-                    next_write += 1;
+            }
+        }
+    }
+
+    fn tilt_south(&mut self) {
+        for x in 0..self.platform.width() {
+            let mut next_write = self.platform.height() - 1;
+            for y in (0..self.platform.height()).rev() {
+                match self.platform.get(x, y) {
+                    Cell::Nothing => {
+                        continue;
+                    }
+                    Cell::Cube => {
+                        next_write = y.saturating_sub(1);
+                        continue;
+                    }
+                    Cell::Round => {
+                        self.platform.swap(x, y, x, next_write);
+                        next_write = next_write.saturating_sub(1);
+                    }
+                }
+            }
+        }
+    }
+
+    fn tilt_east(&mut self) {
+        for y in 0..self.platform.height() {
+            let mut next_write = self.platform.width() - 1;
+            for x in (0..self.platform.width()).rev() {
+                match self.platform.get(x, y) {
+                    Cell::Nothing => {
+                        continue;
+                    }
+                    Cell::Cube => {
+                        next_write = x.saturating_sub(1);
+                        continue;
+                    }
+                    Cell::Round => {
+                        self.platform.swap(x, y, next_write, y);
+                        next_write = next_write.saturating_sub(1);
+                    }
                 }
             }
         }
     }
 }
 
-fn tilt_west(puzzle: &Puzzle, cells: &mut [Vec<Cell>]) {
-    for y in 0..puzzle.rows {
-        let mut next_write = 0;
-        for x in 0..puzzle.cols {
-            match cells[y][x] {
-                Cell::Nothing => {
-                    continue;
-                }
-                Cell::Cube => {
-                    next_write = x + 1;
-                    continue;
-                }
-                Cell::Round => {
-                    let temp = cells[y][next_write];
-                    cells[y][next_write] = cells[y][x];
-                    cells[y][x] = temp;
-                    next_write += 1;
-                }
-            }
-        }
-    }
-}
-
-fn tilt_south(puzzle: &Puzzle, cells: &mut [Vec<Cell>]) {
-    for x in 0..puzzle.cols {
-        let mut next_write = puzzle.rows - 1;
-        for y in (0..puzzle.rows).rev() {
-            match cells[y][x] {
-                Cell::Nothing => {
-                    continue;
-                }
-                Cell::Cube => {
-                    next_write = y.saturating_sub(1);
-                    continue;
-                }
-                Cell::Round => {
-                    let temp = cells[next_write][x];
-                    cells[next_write][x] = cells[y][x];
-                    cells[y][x] = temp;
-                    next_write = next_write.saturating_sub(1);
-                }
-            }
-        }
-    }
-}
-
-fn tilt_east(puzzle: &Puzzle, cells: &mut [Vec<Cell>]) {
-    for y in 0..puzzle.rows {
-        let mut next_write = puzzle.cols - 1;
-        for x in (0..puzzle.cols).rev() {
-            match cells[y][x] {
-                Cell::Nothing => {
-                    continue;
-                }
-                Cell::Cube => {
-                    next_write = x.saturating_sub(1);
-                    continue;
-                }
-                Cell::Round => {
-                    let temp = cells[y][next_write];
-                    cells[y][next_write] = cells[y][x];
-                    cells[y][x] = temp;
-                    next_write = next_write.saturating_sub(1);
-                }
-            }
-        }
-    }
-}
-
-fn calculate(puzzle: &Puzzle, cells: &[Vec<Cell>]) -> usize {
-    (0..puzzle.cols)
+fn calculate(puzzle: &Puzzle) -> usize {
+    (0..puzzle.platform.width())
         .map(|x| {
-            (0..puzzle.rows)
-                .filter(|y| cells[*y][x] == Cell::Round)
-                .map(|y| puzzle.cols - y)
+            (0..puzzle.platform.height())
+                .filter(|y| puzzle.platform.get(x, *y) == Cell::Round)
+                .map(|y| puzzle.platform.height() - y)
                 .sum::<usize>()
         })
         .sum()
 }
 
 fn part1(puzzle: &Puzzle) -> usize {
-    let mut cells = puzzle.cells.clone();
-
-    tilt_north(puzzle, &mut cells);
-
-    calculate(puzzle, &cells)
+    let mut puzzle = puzzle.clone();
+    puzzle.tilt_north();
+    calculate(&puzzle)
 }
 
 fn part2(puzzle: &Puzzle) -> usize {
-    let mut cells = puzzle.cells.clone();
+    let mut puzzle = puzzle.clone();
     let mut iteration = 0;
     let mut scores_seen_map = HashMap::<usize, Vec<usize>>::new();
     let mut scores_seen = vec![];
 
     while iteration < 1_000 {
-        tilt_north(puzzle, &mut cells);
-        tilt_west(puzzle, &mut cells);
-        tilt_south(puzzle, &mut cells);
-        tilt_east(puzzle, &mut cells);
-        let score = calculate(puzzle, &cells);
+        puzzle.tilt_north();
+        puzzle.tilt_west();
+        puzzle.tilt_south();
+        puzzle.tilt_east();
+        let score = calculate(&puzzle);
         scores_seen.push(score);
         scores_seen_map
             .entry(score)
@@ -193,11 +187,11 @@ fn part2(puzzle: &Puzzle) -> usize {
     }
 
     'cycle_finder: while iteration < 1_000_000_000 {
-        tilt_north(puzzle, &mut cells);
-        tilt_west(puzzle, &mut cells);
-        tilt_south(puzzle, &mut cells);
-        tilt_east(puzzle, &mut cells);
-        let score = calculate(puzzle, &cells);
+        puzzle.tilt_north();
+        puzzle.tilt_west();
+        puzzle.tilt_south();
+        puzzle.tilt_east();
+        let score = calculate(&puzzle);
         scores_seen.push(score);
         if let Some(previous_its) = scores_seen_map.get_mut(&score) {
             // If not a cycle, just append and continue.
@@ -206,11 +200,6 @@ fn part2(puzzle: &Puzzle) -> usize {
                 if (1..cycle_len)
                     .all(|i| scores_seen[iteration - i] == scores_seen[iteration - cycle_len - i])
                 {
-                    let cycle_scores: Vec<_> = (0..cycle_len)
-                        .rev()
-                        .map(|i| scores_seen[iteration - i])
-                        .collect();
-                    println!("{cycle_scores:?}");
                     // Fast forward.
                     let remaining = 1_000_000_000 - iteration;
                     iteration += (remaining / cycle_len) * cycle_len;
@@ -227,15 +216,14 @@ fn part2(puzzle: &Puzzle) -> usize {
     }
 
     while iteration < 1_000_000_000 {
-        tilt_north(puzzle, &mut cells);
-        tilt_west(puzzle, &mut cells);
-        tilt_south(puzzle, &mut cells);
-        tilt_east(puzzle, &mut cells);
+        puzzle.tilt_north();
+        puzzle.tilt_west();
+        puzzle.tilt_south();
+        puzzle.tilt_east();
         iteration += 1;
-        println!("{}", calculate(puzzle, &cells));
     }
 
-    calculate(puzzle, &cells)
+    calculate(&puzzle)
 }
 
 fn main() -> Result<(), Oops> {
