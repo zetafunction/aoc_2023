@@ -143,39 +143,36 @@ fn apply_mapping_to_ranges(ranges: Vec<Range>, mapping: &BTreeMap<Range, u64>) -
             continue;
         }
 
-        if let Some(first) = overlapping_ranges.first() {
+        if let Some((first_overlapping_range, _first_dest)) = overlapping_ranges.first() {
             // Not covered by mapping; map directly through.
-            if original_range.begin < first.0.begin {
+            if original_range.begin < first_overlapping_range.begin {
                 new_ranges.push(Range {
                     begin: original_range.begin,
-                    end: first.0.begin,
+                    end: first_overlapping_range.begin,
                 });
             }
         }
 
-        for overlapping_range in &overlapping_ranges {
-            if original_range.end < overlapping_range.0.begin {
+        for (overlapping_range, &dest) in &overlapping_ranges {
+            if original_range.end < overlapping_range.begin {
                 break;
-            } else if overlapping_range.0.contains_range(&original_range) {
+            } else if overlapping_range.contains_range(&original_range) {
                 // original_range is wholly contained in overlapping_range
-                let begin = original_range.begin - overlapping_range.0.begin + overlapping_range.1;
-                let end = original_range.end - overlapping_range.0.begin + overlapping_range.1;
+                let begin = original_range.begin - overlapping_range.begin + dest;
+                let end = original_range.end - overlapping_range.begin + dest;
                 new_ranges.push(Range { begin, end });
                 break;
-            } else if original_range.contains_range(overlapping_range.0) {
-                // The part that comes before or after `overlapping_range` is handled by the if
-                // statements before and after this loop, respectively. Just map the overlapped
-                // part through directly.
-                let begin = *overlapping_range.1;
-                let end = overlapping_range.1 + overlapping_range.0.end - overlapping_range.0.begin;
+            } else if original_range.contains_range(overlapping_range) {
+                let begin = dest;
+                let end = dest + overlapping_range.end - overlapping_range.begin;
                 new_ranges.push(Range { begin, end });
-            } else if overlapping_range.0.contains_position(original_range.begin) {
-                let begin = overlapping_range.1 + original_range.begin - overlapping_range.0.begin;
-                let end = begin + overlapping_range.0.end - original_range.begin;
+            } else if overlapping_range.contains_position(original_range.begin) {
+                let begin = dest + original_range.begin - overlapping_range.begin;
+                let end = begin + overlapping_range.end - original_range.begin;
                 new_ranges.push(Range { begin, end });
-            } else if overlapping_range.0.contains_position(original_range.end) {
-                let begin = *overlapping_range.1;
-                let end = overlapping_range.1 + original_range.end - overlapping_range.0.begin;
+            } else if overlapping_range.contains_position(original_range.end) {
+                let begin = dest;
+                let end = dest + original_range.end - overlapping_range.begin;
                 new_ranges.push(Range { begin, end });
                 break;
             } else {
@@ -183,11 +180,11 @@ fn apply_mapping_to_ranges(ranges: Vec<Range>, mapping: &BTreeMap<Range, u64>) -
             }
         }
 
-        if let Some(last) = overlapping_ranges.last() {
-            if original_range.end > last.0.end {
+        if let Some((last_overlapping_range, _last_dest)) = overlapping_ranges.last() {
+            if original_range.end > last_overlapping_range.end {
                 // Not covered by mapping; map directly through.
                 new_ranges.push(Range {
-                    begin: last.0.end,
+                    begin: last_overlapping_range.end,
                     end: original_range.end,
                 });
             }
