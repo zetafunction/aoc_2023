@@ -186,27 +186,24 @@ fn part2(puzzle: &Puzzle) -> usize {
         states_seen.push(state);
         let previouses = states_seen_map.entry(state).or_insert_with(|| vec![]);
 
-        if !previouses.is_empty() {
-            // If not a cycle, just append and continue.
-            for previous in &*previouses {
-                let potential_cycle_len = iteration - *previous;
-                if (1..potential_cycle_len).all(|i| {
-                    states_seen[iteration - i] == states_seen[iteration - potential_cycle_len - i]
-                }) {
-                    // Fast forward.
-                    iteration += 1;
-                    let remaining = 1_000_000_000 - iteration;
-                    iteration += (remaining / potential_cycle_len) * potential_cycle_len;
-                    break 'cycle_finder;
-                }
+        if let Some(cycle_len) = previouses.iter().find_map(|previous| {
+            let cycle_len = iteration - *previous;
+            let current_slice = states_seen.get(iteration - cycle_len..iteration);
+            let previous_slice = states_seen.get(iteration - cycle_len * 2..iteration - cycle_len);
+            if current_slice == previous_slice {
+                Some(cycle_len)
+            } else {
+                None
             }
-            // Not a cycle, just continue.
-            previouses.push(iteration);
+        }) {
             iteration += 1;
-        } else {
-            previouses.push(iteration);
-            iteration += 1;
+            let remaining = 1_000_000_000 - iteration;
+            iteration += (remaining / cycle_len) * cycle_len;
+            break 'cycle_finder;
         }
+
+        previouses.push(iteration);
+        iteration += 1;
     }
 
     while iteration < 1_000_000_000 {
