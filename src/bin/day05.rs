@@ -127,52 +127,53 @@ fn part1(puzzle: &Puzzle) -> u64 {
 
 fn apply_mapping_to_ranges(ranges: Vec<Range>, mapping: &BTreeMap<Range, u64>) -> Vec<Range> {
     let mut new_ranges = vec![];
-    for original_range in ranges {
+    for original in ranges {
         let overlapping_ranges = mapping
             .range(
                 Range {
-                    begin: original_range.begin,
-                    end: original_range.begin,
+                    begin: original.begin,
+                    end: original.begin,
                 }..,
             )
             .collect::<Vec<_>>();
 
         if overlapping_ranges.is_empty() {
             // Not covered by mapping; map directly through.
-            new_ranges.push(original_range);
+            new_ranges.push(original);
             continue;
         }
 
-        if let Some((first_overlapping_range, _first_dest)) = overlapping_ranges.first() {
+        if let Some((first_overlapping, _first_dest)) = overlapping_ranges.first() {
             // Not covered by mapping; map directly through.
-            if original_range.begin < first_overlapping_range.begin {
+            if original.begin < first_overlapping.begin {
                 new_ranges.push(Range {
-                    begin: original_range.begin,
-                    end: first_overlapping_range.begin,
+                    begin: original.begin,
+                    end: std::cmp::min(original.end, first_overlapping.begin),
                 });
             }
         }
 
-        for (overlapping_range, &dest) in &overlapping_ranges {
-            if original_range.end < overlapping_range.begin {
+        for (overlapping, &dest) in &overlapping_ranges {
+            if original.end < overlapping.begin {
                 break;
-            } else if overlapping_range.contains_range(&original_range) {
-                // original_range is wholly contained in overlapping_range
-                let begin = original_range.begin - overlapping_range.begin + dest;
-                let end = original_range.end - overlapping_range.begin + dest;
+            } else if overlapping.contains_range(&original) {
+                // `original` is wholly contained in `overlapping`
+                let begin = original.begin - overlapping.begin + dest;
+                let end = original.end - overlapping.begin + dest;
                 new_ranges.push(Range { begin, end });
                 break;
-            } else if original_range.contains_range(overlapping_range) {
+            } else if original.contains_range(overlapping) {
+                //
                 let begin = dest;
-                let end = dest + overlapping_range.end - overlapping_range.begin;
+                let end = dest + overlapping.end - overlapping.begin;
                 new_ranges.push(Range { begin, end });
-            } else if overlapping_range.contains_position(original_range.begin) {
-                let begin = dest + original_range.begin - overlapping_range.begin;
-                let end = begin + overlapping_range.end - original_range.begin;
+            } else if overlapping.contains_position(original.begin) {
+                let begin = dest + original.begin - overlapping.begin;
+                let end = begin + overlapping.end - original.begin;
                 new_ranges.push(Range { begin, end });
-            } else if overlapping_range.contains_position(original_range.end) {
+            } else if overlapping.contains_position(original.end) {
                 let begin = dest;
-                let end = dest + original_range.end - overlapping_range.begin;
+                let end = dest + original.end - overlapping.begin;
                 new_ranges.push(Range { begin, end });
                 break;
             } else {
@@ -180,12 +181,11 @@ fn apply_mapping_to_ranges(ranges: Vec<Range>, mapping: &BTreeMap<Range, u64>) -
             }
         }
 
-        if let Some((last_overlapping_range, _last_dest)) = overlapping_ranges.last() {
-            if original_range.end > last_overlapping_range.end {
-                // Not covered by mapping; map directly through.
+        if let Some((last_overlapping, _last_dest)) = overlapping_ranges.last() {
+            if original.end > last_overlapping.end {
                 new_ranges.push(Range {
-                    begin: last_overlapping_range.end,
-                    end: original_range.end,
+                    begin: std::cmp::max(original.begin, last_overlapping.end),
+                    end: original.end,
                 });
             }
         }
