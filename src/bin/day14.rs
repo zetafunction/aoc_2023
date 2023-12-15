@@ -53,7 +53,7 @@ impl FromStr for Puzzle {
                         '.' => continue,
                         _ => unreachable!(),
                     },
-                )
+                );
             }
         }
 

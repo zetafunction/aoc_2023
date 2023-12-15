@@ -43,14 +43,17 @@ impl<T: Copy> Matrix<T> {
         }
     }
 
+    #[must_use]
     pub fn width(&self) -> usize {
         self.width
     }
 
+    #[must_use]
     pub fn height(&self) -> usize {
         self.height
     }
 
+    #[must_use]
     pub fn get(&self, x: usize, y: usize) -> T {
         self.data[x + y * self.width]
     }
@@ -60,9 +63,10 @@ impl<T: Copy> Matrix<T> {
     }
 
     pub fn swap(&mut self, x1: usize, y1: usize, x2: usize, y2: usize) {
-        self.data.swap(x1 + y1 * self.width, x2 + y2 * self.width)
+        self.data.swap(x1 + y1 * self.width, x2 + y2 * self.width);
     }
 
+    #[must_use]
     pub fn col(&self, x: usize) -> Col<T> {
         Col {
             matrix: self,
@@ -72,6 +76,7 @@ impl<T: Copy> Matrix<T> {
         }
     }
 
+    #[must_use]
     pub fn row(&self, y: usize) -> Row<T> {
         Row {
             matrix: self,
