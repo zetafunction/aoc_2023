@@ -26,6 +26,16 @@ struct Range {
     end: u64,
 }
 
+impl Range {
+    fn contains_position(&self, position: u64) -> bool {
+        self.begin <= position && position < self.end
+    }
+
+    fn contains_range(&self, other: &Self) -> bool {
+        self.begin <= other.begin && other.end <= self.end
+    }
+}
+
 impl Ord for Range {
     fn cmp(&self, rhs: &Self) -> Ordering {
         self.end
@@ -86,6 +96,10 @@ impl FromStr for Puzzle {
     }
 }
 
+fn parse(input: &str) -> Result<Puzzle, Oops> {
+    input.parse()
+}
+
 fn apply_mapping(src: u64, mapping: &BTreeMap<Range, u64>) -> u64 {
     let src_range = Range {
         begin: src,
@@ -102,10 +116,6 @@ fn apply_mapping(src: u64, mapping: &BTreeMap<Range, u64>) -> u64 {
     }
 }
 
-fn parse(input: &str) -> Result<Puzzle, Oops> {
-    input.parse()
-}
-
 fn part1(puzzle: &Puzzle) -> u64 {
     puzzle
         .seeds
@@ -115,13 +125,97 @@ fn part1(puzzle: &Puzzle) -> u64 {
         .expect("no seeds")
 }
 
+fn apply_mapping_to_ranges(ranges: Vec<Range>, mapping: &BTreeMap<Range, u64>) -> Vec<Range> {
+    let mut new_ranges = vec![];
+    for original_range in ranges {
+        let overlapping_ranges = mapping
+            .range(
+                Range {
+                    begin: original_range.begin,
+                    end: original_range.begin,
+                }..,
+            )
+            .collect::<Vec<_>>();
+
+        if overlapping_ranges.is_empty() {
+            // Not covered by mapping; map directly through.
+            new_ranges.push(original_range);
+            continue;
+        }
+
+        if let Some(first) = overlapping_ranges.first() {
+            // Not covered by mapping; map directly through.
+            if original_range.begin < first.0.begin {
+                new_ranges.push(Range {
+                    begin: original_range.begin,
+                    end: first.0.begin,
+                });
+            }
+        }
+
+        for overlapping_range in &overlapping_ranges {
+            if original_range.end < overlapping_range.0.begin {
+                break;
+            } else if overlapping_range.0.contains_range(&original_range) {
+                // original_range is wholly contained in overlapping_range
+                let begin = original_range.begin - overlapping_range.0.begin + overlapping_range.1;
+                let end = original_range.end - overlapping_range.0.begin + overlapping_range.1;
+                new_ranges.push(Range { begin, end });
+                break;
+            } else if original_range.contains_range(overlapping_range.0) {
+                // The part that comes before or after `overlapping_range` is handled by the if
+                // statements before and after this loop, respectively. Just map the overlapped
+                // part through directly.
+                let begin = *overlapping_range.1;
+                let end = overlapping_range.1 + overlapping_range.0.end - overlapping_range.0.begin;
+                new_ranges.push(Range { begin, end });
+            } else if overlapping_range.0.contains_position(original_range.begin) {
+                let begin = overlapping_range.1 + original_range.begin - overlapping_range.0.begin;
+                let end = begin + overlapping_range.0.end - original_range.begin;
+                new_ranges.push(Range { begin, end });
+            } else if overlapping_range.0.contains_position(original_range.end) {
+                let begin = *overlapping_range.1;
+                let end = overlapping_range.1 + original_range.end - overlapping_range.0.begin;
+                new_ranges.push(Range { begin, end });
+                break;
+            } else {
+                unreachable!();
+            }
+        }
+
+        if let Some(last) = overlapping_ranges.last() {
+            if original_range.end > last.0.end {
+                // Not covered by mapping; map directly through.
+                new_ranges.push(Range {
+                    begin: last.0.end,
+                    end: original_range.end,
+                });
+            }
+        }
+    }
+    new_ranges
+}
+
 fn part2(puzzle: &Puzzle) -> u64 {
     std::iter::zip(
         puzzle.seeds.iter().step_by(2),
         puzzle.seeds.iter().skip(1).step_by(2),
     )
-    .flat_map(|(seed, range)| {
-        (0..*range).map(move |i| puzzle.mappings.iter().fold(seed + i, apply_mapping))
+    .map(|(seed, range)| {
+        let mut current_ranges = vec![Range {
+            begin: *seed,
+            end: *seed + *range,
+        }];
+
+        for mapping in &puzzle.mappings {
+            current_ranges = apply_mapping_to_ranges(current_ranges, mapping);
+        }
+
+        current_ranges
+            .into_iter()
+            .map(|range| range.begin)
+            .min()
+            .unwrap()
     })
     .min()
     .expect("no seeds")
