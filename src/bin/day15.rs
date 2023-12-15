@@ -94,56 +94,46 @@ fn part1(puzzle: &Puzzle) -> u64 {
     puzzle.steps.iter().map(|s| u64::from(hash(s))).sum()
 }
 
-#[derive(Debug)]
-struct Lense<'a> {
+#[derive(Clone, Debug)]
+struct Lens<'a> {
     label: &'a str,
     focal_len: u8,
 }
 
-#[derive(Debug, Default)]
-struct Box<'a> {
-    lenses: Vec<Lense<'a>>,
-}
-
 fn part2(puzzle: &Puzzle) -> u64 {
-    let mut boxes = vec![];
-    for _ in 0..256 {
-        boxes.push(Box::default());
-    }
-    for parsed_step in puzzle.parsed_steps.iter() {
-        let box_no = hash(&parsed_step.label);
-        let the_box = &mut boxes[usize::from(box_no)];
-        let lense_idx = the_box
-            .lenses
+    let mut lenses_boxes = vec![Vec::<Lens>::default(); 256];
+
+    for parsed_step in &puzzle.parsed_steps {
+        let box_idx = usize::from(hash(&parsed_step.label));
+        let lenses_box = &mut lenses_boxes[box_idx];
+        let lens_idx = lenses_box
             .iter()
-            .position(|lense| lense.label == parsed_step.label);
+            .position(|lens| lens.label == parsed_step.label);
         match parsed_step.op {
             Op::Remove => {
-                if let Some(lense_idx) = lense_idx {
-                    the_box.lenses.remove(lense_idx);
+                if let Some(lens_idx) = lens_idx {
+                    lenses_box.remove(lens_idx);
                 }
             }
             Op::Insert(focal_len) => {
-                let new_lense = Lense {
+                let lens = Lens {
                     label: &parsed_step.label,
                     focal_len,
                 };
-                match lense_idx {
-                    Some(lense_idx) => the_box.lenses[lense_idx] = new_lense,
-                    None => the_box.lenses.push(new_lense),
+                match lens_idx {
+                    Some(lens_idx) => lenses_box[lens_idx] = lens,
+                    None => lenses_box.push(lens),
                 }
             }
         }
     }
 
     (0u64..)
-        .zip(boxes.iter())
-        .map(|(box_idx, the_box)| {
+        .zip(lenses_boxes.iter())
+        .map(|(box_idx, lenses_box)| {
             (0u64..)
-                .zip(the_box.lenses.iter())
-                .map(|(lense_idx, lense)| {
-                    (box_idx + 1) * (lense_idx + 1) * u64::from(lense.focal_len)
-                })
+                .zip(lenses_box.iter())
+                .map(|(lens_idx, lens)| (box_idx + 1) * (lens_idx + 1) * u64::from(lens.focal_len))
                 .sum::<u64>()
         })
         .sum()
