@@ -78,13 +78,48 @@ struct Cursor {
     direction: Direction,
 }
 
+struct EnergizedState {
+    cursors: VecDeque<Cursor>,
+    visited: HashSet<Cursor>,
+}
+
+impl EnergizedState {
+    fn new(initial_cursor: Cursor) -> Self {
+        EnergizedState {
+            cursors: VecDeque::from([initial_cursor]),
+            visited: HashSet::new(),
+        }
+    }
+
+    fn next_cursor(&mut self) -> Option<Cursor> {
+        self.cursors.pop_front()
+    }
+
+    fn push_cursor(&mut self, position: Point2, direction: Direction) {
+        let cursor = Cursor {
+            position,
+            direction,
+        };
+        if self.visited.insert(cursor) {
+            self.cursors.push_back(cursor);
+        }
+    }
+
+    fn energized_count(&self) -> usize {
+        self.visited
+            .iter()
+            .map(|cursor| cursor.position)
+            .collect::<HashSet<_>>()
+            .len()
+    }
+}
+
 fn energize(puzzle: &Puzzle, initial_cursor: Cursor) -> usize {
-    let mut cursors = VecDeque::from([initial_cursor]);
-    let mut visited = HashSet::new();
+    let mut state = EnergizedState::new(initial_cursor);
     while let Some(Cursor {
         position,
         direction,
-    }) = cursors.pop_front()
+    }) = state.next_cursor()
     {
         let next_position = match direction {
             Direction::Up => Point2::new(position.x, position.y - 1),
@@ -99,82 +134,42 @@ fn energize(puzzle: &Puzzle, initial_cursor: Cursor) -> usize {
 
         match (next_space, direction) {
             (Space::VerticalSplitter, Direction::Left | Direction::Right) => {
-                let cursor = Cursor {
-                    position: next_position,
-                    direction: Direction::Up,
-                };
-                if visited.insert(cursor) {
-                    cursors.push_back(cursor);
-                }
-                let cursor = Cursor {
-                    position: next_position,
-                    direction: Direction::Down,
-                };
-                if visited.insert(cursor) {
-                    cursors.push_back(cursor);
-                }
+                state.push_cursor(next_position, Direction::Up);
+                state.push_cursor(next_position, Direction::Down);
             }
             (Space::HorizontalSplitter, Direction::Up | Direction::Down) => {
-                let cursor = Cursor {
-                    position: next_position,
-                    direction: Direction::Left,
-                };
-                if visited.insert(cursor) {
-                    cursors.push_back(cursor);
-                }
-                let cursor = Cursor {
-                    position: next_position,
-                    direction: Direction::Right,
-                };
-                if visited.insert(cursor) {
-                    cursors.push_back(cursor);
-                }
+                state.push_cursor(next_position, Direction::Left);
+                state.push_cursor(next_position, Direction::Right);
             }
             (Space::DiagonalMirror, direction) => {
-                let cursor = Cursor {
-                    position: next_position,
-                    direction: match direction {
+                state.push_cursor(
+                    next_position,
+                    match direction {
                         Direction::Up => Direction::Left,
                         Direction::Right => Direction::Down,
                         Direction::Down => Direction::Right,
                         Direction::Left => Direction::Up,
                     },
-                };
-                if visited.insert(cursor) {
-                    cursors.push_back(cursor);
-                }
+                );
             }
             (Space::AntiDiagonalMirror, direction) => {
-                let cursor = Cursor {
-                    position: next_position,
-                    direction: match direction {
+                state.push_cursor(
+                    next_position,
+                    match direction {
                         Direction::Up => Direction::Right,
                         Direction::Left => Direction::Down,
                         Direction::Down => Direction::Left,
                         Direction::Right => Direction::Up,
                     },
-                };
-                if visited.insert(cursor) {
-                    cursors.push_back(cursor);
-                }
+                );
             }
             _ => {
-                let cursor = Cursor {
-                    position: next_position,
-                    direction,
-                };
-                if visited.insert(cursor) {
-                    cursors.push_back(cursor);
-                }
+                state.push_cursor(next_position, direction);
             }
         }
     }
 
-    let visited_spaces = visited
-        .into_iter()
-        .map(|cursor| cursor.position)
-        .collect::<HashSet<_>>();
-    visited_spaces.len()
+    state.energized_count()
 }
 
 fn part1(puzzle: &Puzzle) -> usize {
@@ -187,7 +182,6 @@ fn part1(puzzle: &Puzzle) -> usize {
 
 fn part2(puzzle: &Puzzle) -> usize {
     let bounds = Bounds2::from_points(puzzle.spaces.keys());
-    println!("{bounds:?}");
 
     (bounds.min.y..bounds.max.y)
         .map(|y| {
